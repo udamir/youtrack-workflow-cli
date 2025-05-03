@@ -1,0 +1,63 @@
+{
+  "name": "youtrack-workflow-cli",
+  "version": "0.0.1",
+  "description": "Youtrack workflow CLI",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/udamir/youtrack-workflow-cli.git"
+  },
+  "main": "src/index.js",
+  "bin": {
+    "ytw": "./bin/ytw"
+  },
+  "author": "Damir Yusipov",
+  "license": "MIT",
+  "type": "module",
+  "preferGlobal": true,
+  "scripts": {
+    "build": "tsc",
+    "lint": "biome lint",
+    "format": "biome format",
+    "test": "jest",
+    "bin": "./bin/ytw"
+  },
+  "keywords": [
+    "youtrack",
+    "workflow",
+    "cli"
+  ],
+  "dependencies": {
+    "commander": "^13.1.0",
+    "dotenv": "^16.5.0",
+    "inquirer": "^12.6.0",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "biome": "^0.3.3",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.2",
+    "typescript": "^5.8.3"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "moduleFileExtensions": [
+      "ts",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest"
+      ]
+    },
+    "testMatch": [
+      "**/test/**/*.test.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/out/",
+      "/dist/"
+    ]
+  }
+}
