@@ -1,26 +1,30 @@
 {
   "name": "youtrack-workflow-cli",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "description": "Youtrack workflow CLI",
   "repository": {
     "type": "git",
     "url": "https://github.com/udamir/youtrack-workflow-cli.git"
   },
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "bin": {
     "ytw": "./bin/ytw"
   },
   "author": "Damir Yusipov",
   "license": "MIT",
-  "type": "module",
+  "type": "commonjs",
   "preferGlobal": true,
   "scripts": {
     "build": "tsc",
     "lint": "biome lint",
     "format": "biome format",
     "test": "jest",
-    "bin": "./bin/ytw"
+    "prepublish": "npm run build && npm run lint && npm run test"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
   "keywords": [
     "youtrack",
     "workflow",
