@@ -1,5 +1,6 @@
 import { archiveWorkflow, extractFilesFromZip } from "../tools/zip.tools"
 import type { WorkflowFile } from "../types"
+import { YouTrackApiError } from "../errors"
 
 /**
  * YouTrack workflow entity type
@@ -41,6 +42,7 @@ export class YoutrackService {
    * Fetch a workflow from YouTrack
    * @param workflow Workflow name
    * @returns Workflow data as an array of WorkflowFile
+   * @throws {YouTrackApiError} If the workflow cannot be fetched
    */
   public async fetchWorkflow(workflow: string): Promise<WorkflowFile[] | null> {
     // Remove @ prefix but don't encode the whole name
@@ -60,16 +62,19 @@ export class YoutrackService {
     }
 
     if (!response.ok) {
-      // Get more details about the error
-      console.error(`Failed to fetch workflow '${workflow}': Status = ${response.status}`)
+      let responseText = ""
       try {
         // Try to read response text if available
-        const responseText = await response.text()
-        console.error(`Response body: ${responseText}`)
-      } catch (err) {
-        console.error("Could not read response text", err)
+        responseText = await response.text()
+      } catch {
+        // Unable to read response text
       }
-      throw new Error(`Cannot fetch workflow '${workflow}' from '${this.host}'`)
+      
+      throw new YouTrackApiError(
+        `Cannot fetch workflow '${workflow}' from '${this.host}'`,
+        response.status,
+        responseText
+      )
     }
 
     const blob = await response.blob()
@@ -81,7 +86,8 @@ export class YoutrackService {
   /**
    * Upload a workflow to YouTrack
    * @param files Workflow files
-   * @returns True if successful, false otherwise
+   * @returns True if successful
+   * @throws {YouTrackApiError} If the workflow cannot be uploaded
    */
   public async uploadWorkflow(files: WorkflowFile[]): Promise<boolean> {
     const zipBuffer = await archiveWorkflow(files)
@@ -96,10 +102,6 @@ export class YoutrackService {
       body: zipBuffer,
     }
 
-    // Add more debugging for the request
-    console.debug(`Uploading workflow to ${url.toString()}`)
-    console.debug(`Files to upload: ${files.map((f) => f.name).join(", ")}`)
-
     const response = await fetch(url, params)
 
     if (response.status === 401) {
@@ -107,16 +109,19 @@ export class YoutrackService {
     }
 
     if (!response.ok) {
-      // Get more details about the error
-      console.error(`Failed to upload workflow: Status = ${response.status}`)
+      let responseText = ""
       try {
         // Try to read response text if available
-        const responseText = await response.text()
-        console.error(`Response body: ${responseText}`)
-      } catch (err) {
-        console.error("Could not read response text", err)
+        responseText = await response.text()
+      } catch {
+        // Unable to read response text
       }
-      throw new Error(`Cannot upload workflow to '${this.host}'`)
+      
+      throw new YouTrackApiError(
+        `Cannot upload workflow to '${this.host}'`,
+        response.status,
+        responseText
+      )
     }
 
     return true

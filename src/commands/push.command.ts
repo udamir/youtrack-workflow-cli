@@ -1,6 +1,7 @@
 import inquirer from "inquirer"
 
 import { WORKFLOW_STATUS, WORKFLOW_SYMBOL, WORKFLOW_DESCRIPTION, STATUS_COLORS, COLORS } from "../consts"
+import { WorkflowError, WorkflowNotFoundError, YouTrackApiError } from "../errors"
 import { YoutrackService, ProjectService } from "../services"
 import { isError, colorize } from "../utils"
 
@@ -47,12 +48,21 @@ export const pushCommand = async (workflows: string[] = [], { host = "", token =
     workflowsToProcess = selected.workflows
   } else if (!workflows.length) {
     // Case 2: No arguments - show status and let user select workflows
-    const statuses = await projectService.checkStatus()
+    let statuses: Record<string, keyof typeof WORKFLOW_SYMBOL> = {}
+    try {
+      statuses = await projectService.checkStatus()
+    } catch (error) {
+      if (error instanceof WorkflowError) {
+        console.error(`Error checking workflow status: ${error.message}`)
+      } else {
+        console.error("Error checking workflow status:", error)
+      }
+      return
+    }
 
     const choices = Object.entries(statuses).map(([name, status]) => {
-      const symbol = WORKFLOW_SYMBOL[status]
       const color = STATUS_COLORS[status]
-      const coloredSymbol = colorize(symbol, color, COLORS.STYLE.BRIGHT)
+      const coloredSymbol = colorize(WORKFLOW_SYMBOL[status], color, COLORS.STYLE.BRIGHT)
       const coloredStatus = colorize(WORKFLOW_DESCRIPTION[status], color)
 
       return {
@@ -85,14 +95,32 @@ export const pushCommand = async (workflows: string[] = [], { host = "", token =
 
   console.log(`Will push ${workflowsToProcess.length} workflow(s) to YouTrack`)
 
+  let successCount = 0
+  let failCount = 0
+
   for (const workflow of workflowsToProcess) {
     try {
       await projectService.uploadWorkflow(workflow)
       console.log(`${colorize("✓", COLORS.FG.GREEN)} ${workflow}: pushed successfully`)
+      successCount++
     } catch (error) {
-      console.error(`${colorize("✗", COLORS.FG.RED)} ${workflow}: failed to push`, error)
+      failCount++
+      if (error instanceof WorkflowNotFoundError) {
+        console.error(`${colorize("✗", COLORS.FG.RED)} ${workflow}: ${error.message}`)
+      } else if (error instanceof YouTrackApiError) {
+        console.error(`${colorize("✗", COLORS.FG.RED)} ${workflow}: ${error.message}`)
+        if (error.responseText) {
+          console.error(`  Response details: ${error.responseText}`)
+        }
+      } else if (error instanceof WorkflowError) {
+        console.error(`${colorize("✗", COLORS.FG.RED)} ${workflow}: ${error.message}`)
+      } else {
+        console.error(`${colorize("✗", COLORS.FG.RED)} ${workflow}: failed to push`, error)
+      }
     }
   }
 
-  console.log(`\n${colorize("All workflows processed.", COLORS.FG.GREEN)}`)
+  console.log(
+    `\n${colorize(`All workflows processed. Success: ${successCount}, Failed: ${failCount}`, COLORS.FG.GREEN)}`,
+  )
 }

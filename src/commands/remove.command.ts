@@ -1,7 +1,9 @@
 import inquirer from "inquirer"
 
 import { YoutrackService, ProjectService } from "../services"
-import { isError } from "../utils"
+import { isError, colorize } from "../utils"
+import { WorkflowError } from "../errors"
+import { COLORS } from "../consts"
 
 /**
  * Command handler for removing workflows from the project
@@ -50,7 +52,6 @@ export const removeCommand = async (
     workflows.push(...selected.workflows)
 
     // Confirm workflow deletion if deleteFiles option is true
-
     if (!deleteFiles) {
       const confirm = await inquirer.prompt([
         {
@@ -69,9 +70,26 @@ export const removeCommand = async (
   }
 
   try {
-    await projectService.removeWorkflows(workflows, deleteFiles)
-    console.log(`Workflows removed successfully${deleteFiles ? " and files deleted" : ""}.`)
+    const results = await projectService.removeWorkflows(workflows, deleteFiles)
+
+    // Process and display results for each workflow
+    for (const [workflow, result] of Object.entries(results)) {
+      if (result.success) {
+        console.log(`${colorize("✓", COLORS.FG.GREEN)} ${workflow}: ${result.message}`)
+      } else if (result.skipped) {
+        console.log(`${colorize("⧖", COLORS.FG.YELLOW)} ${workflow}: ${result.message}`)
+      } else {
+        console.log(`${colorize("✗", COLORS.FG.RED)} ${workflow}: ${result.message}`)
+        if (result.error) {
+          console.error(`  Error details: ${result.error.message}`)
+        }
+      }
+    }
   } catch (error) {
-    console.error("Error removing workflows:", error)
+    if (error instanceof WorkflowError) {
+      console.error(`Error removing workflows: ${error.message}`)
+    } else {
+      console.error("Error removing workflows:", error)
+    }
   }
 }

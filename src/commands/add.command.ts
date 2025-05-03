@@ -1,7 +1,9 @@
 import inquirer from "inquirer"
 
 import { YoutrackService, ProjectService } from "../services"
-import { isError } from "../utils"
+import { WorkflowError, YouTrackApiError } from "../errors"
+import { isError, colorize } from "../utils"
+import { COLORS } from "../consts"
 
 /**
  * Command handler for adding workflows to the project
@@ -25,7 +27,14 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
     try {
       availableWorkflows.push(...(await projectService.availableWorkflows()))
     } catch (error) {
-      console.error("Error fetching available workflows:", error)
+      if (error instanceof YouTrackApiError) {
+        console.error(`Error fetching available workflows: ${error.message}`)
+        if (error.responseText) {
+          console.error("Response details:", error.responseText)
+        }
+      } else {
+        console.error("Error fetching available workflows:", error)
+      }
       return
     }
 
@@ -48,9 +57,26 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
   }
 
   try {
-    await projectService.addWorkflows(workflows)
-    console.log("Workflows added successfully.")
+    const results = await projectService.addWorkflows(workflows)
+    
+    // Process and display results for each workflow
+    for (const [workflow, result] of Object.entries(results)) {
+      if (result.success) {
+        console.log(`${colorize("✓", COLORS.FG.GREEN)} ${workflow}: ${result.message}`)
+      } else if (result.skipped) {
+        console.log(`${colorize("⧖", COLORS.FG.YELLOW)} ${workflow}: ${result.message}`)
+      } else {
+        console.log(`${colorize("✗", COLORS.FG.RED)} ${workflow}: ${result.message}`)
+        if (result.error) {
+          console.error(`  Error details: ${result.error.message}`)
+        }
+      }
+    }
   } catch (error) {
-    console.error("Error adding workflows:", error)
+    if (error instanceof WorkflowError) {
+      console.error(`Error adding workflows: ${error.message}`)
+    } else {
+      console.error("Error adding workflows:", error)
+    }
   }
 }
