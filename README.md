@@ -20,6 +20,21 @@ If you prefer to install packages as dependencies in your development environmen
 npm install --save-dev youtrack-workflow-cli
 ```
 
+### Using npx
+
+If you don't want to install the package globally or as a dependency, you can use `npx` to run the commands directly:
+
+```
+npx youtrack-workflow-cli <command>
+# or the shorter alias
+npx ytw <command>
+```
+
+This approach allows you to:
+- Use the latest version without installing it permanently
+- Avoid global installation conflicts
+- Run the tool in CI/CD pipelines without installation steps
+
 ## Utility Commands
 
 The package includes commands that let you synchronize local changes with your YouTrack installation. All commands are accessible through the `ytw` CLI tool. The following
@@ -28,7 +43,7 @@ commands are available:
 ### List
 
 ```
-ytw list
+npx ytw list
 ```
 
 Lists all the workflows that are available in your YouTrack installation.
@@ -36,7 +51,7 @@ Lists all the workflows that are available in your YouTrack installation.
 ### Add
 
 ```
-ytw add [workflow-name...]
+npx ytw add [workflow-name...]
 ```
 
 Adds one or more workflows to your project. If no workflow names are specified, you'll be prompted to select from available workflows in YouTrack. The workflow information is stored in your project's package.json file.
@@ -48,7 +63,7 @@ Options:
 ### Pull
 
 ```
-ytw pull [workflow-name...]
+npx ytw pull [workflow-name...]
 ```
 
 Downloads the specified workflows from your YouTrack installation to your local project.
@@ -60,7 +75,7 @@ Options:
 ### Push
 
 ```
-ytw push [workflow-name...]
+npx ytw push [workflow-name...]
 ```
 
 Uploads the workflows from your local project to your YouTrack installation.
@@ -72,7 +87,7 @@ Options:
 ### Remove
 
 ```
-ytw remove [workflow-name...]
+npx ytw remove [workflow-name...]
 ```
 
 Removes workflows from your project and optionally deletes the associated files.
