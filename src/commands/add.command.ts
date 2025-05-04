@@ -1,14 +1,13 @@
 import inquirer from "inquirer"
+import ora from "ora"
 
 import { YoutrackService, ProjectService } from "../services"
-import { WorkflowError, YouTrackApiError } from "../errors"
-import { isError, colorize } from "../utils"
-import { COLORS } from "../consts"
+import { isError, printItemStatus } from "../utils"
+import { PROGRESS_STATUS } from "../consts"
 
 /**
- * Command handler for adding workflows to the project
- * @param workflows Workflow names to add
- * @param options Command options
+ * Command to add workflows to a project
+ * @returns Results of the command execution
  */
 export const addCommand = async (workflows: string[] = [], { host = "", token = "" } = {}): Promise<void> => {
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
@@ -18,65 +17,67 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
     return
   }
 
-  const youtrack = new YoutrackService(host, token)
-  const projectService = new ProjectService(youtrack)
+  // Create services
+  const youtrackService = new YoutrackService(host, token)
+  const projectService = new ProjectService(youtrackService)
 
-  // If no workflows specified, prompt user to select
-  if (!workflows.length) {
-    const availableWorkflows: string[] = []
+  if (workflows.length === 0) {
     try {
-      availableWorkflows.push(...(await projectService.availableWorkflows()))
+      // Get all available workflows from YouTrack
+      const availableWorkflows = await projectService.availableWorkflows()
+
+      // Show prompt to select workflows
+      const selected = await inquirer.prompt([
+        {
+          type: "checkbox",
+          name: "workflows",
+          message: "Select workflows to add:",
+          choices: availableWorkflows,
+        },
+      ])
+
+      if (!selected.workflows || selected.workflows.length === 0) {
+        console.log("No workflows selected")
+        return
+      }
+
+      workflows.push(...selected.workflows)
     } catch (error) {
-      if (error instanceof YouTrackApiError) {
-        console.error(`Error fetching available workflows: ${error.message}`)
-        if (error.responseText) {
-          console.error("Response details:", error.responseText)
-        }
-      } else {
-        console.error("Error fetching available workflows:", error)
-      }
+      console.error("Error fetching available workflows:", error)
       return
     }
-
-    const selected = await inquirer.prompt([
-      {
-        type: "checkbox",
-        name: "workflows",
-        message: "Select workflows to add:",
-        choices: availableWorkflows,
-      },
-    ])
-
-    if (!selected.workflows.length) {
-      console.log("No workflows selected. Exiting.")
-      return
-    }
-
-    console.log("Selected workflows:", selected.workflows)
-    workflows.push(...selected.workflows)
   }
 
-  try {
-    const results = await projectService.addWorkflows(workflows)
-    
-    // Process and display results for each workflow
-    for (const [workflow, result] of Object.entries(results)) {
-      if (result.success) {
-        console.log(`${colorize("✓", COLORS.FG.GREEN)} ${workflow}: ${result.message}`)
-      } else if (result.skipped) {
-        console.log(`${colorize("⧖", COLORS.FG.YELLOW)} ${workflow}: ${result.message}`)
-      } else {
-        console.log(`${colorize("✗", COLORS.FG.RED)} ${workflow}: ${result.message}`)
-        if (result.error) {
-          console.error(`  Error details: ${result.error.message}`)
-        }
-      }
+  // Process workflows and track progress
+  let completedCount = 0
+
+  for (const workflow of workflows) {
+    // Create spinner for tracking progress
+    const spinner = ora({
+      text: `Adding workflow to project (${completedCount}/${workflows.length})`,
+      color: "blue",
+    }).start()
+
+    try {
+      const result = await projectService.addWorkflow(workflow)
+
+      // Stop spinner to print status line
+      spinner.stop()
+
+      const status = result.skipped
+        ? PROGRESS_STATUS.WARNING
+        : result.success
+          ? PROGRESS_STATUS.SUCCESS
+          : PROGRESS_STATUS.FAILED
+
+      printItemStatus(workflow, status, result.message)
+    } catch (err) {
+      // Failed to add workflow
+      printItemStatus(workflow, PROGRESS_STATUS.FAILED, err instanceof Error ? err.message : "Failed to remove workflow")
+      spinner.stop()
     }
-  } catch (error) {
-    if (error instanceof WorkflowError) {
-      console.error(`Error adding workflows: ${error.message}`)
-    } else {
-      console.error("Error adding workflows:", error)
-    }
+    completedCount++
   }
+
+  console.log(`\nSuccessfully added workflows: ${workflows.length}/${workflows.length}`)
 }

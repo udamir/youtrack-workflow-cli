@@ -1,4 +1,5 @@
-import { COLORS } from "./consts"
+import { COLORS, PROGRESS_STATUS_COLOR, PROGRESS_STATUS_ICON } from "./consts"
+import type { ProgressStatus } from "./types"
 
 /**
  * Color a string with ANSI color codes
@@ -9,7 +10,7 @@ import { COLORS } from "./consts"
  */
 export const colorize = (text: string, fgColor: string, style?: string): string => {
   const prefix = [fgColor, style].filter(Boolean).join("")
-  return `${prefix}${text}${COLORS.STYLE.RESET}`
+  return `${prefix}${text}${COLORS.RESET}`
 }
 
 /**
@@ -24,4 +25,14 @@ export const isError = (condition: unknown, message: string): boolean => {
   }
   console.error(message)
   return true
+}
+
+/**
+ * Print the status of a workflow or project
+ * @param item Name of the workflow or project
+ * @param status Status of the workflow or project
+ * @param message Message to display
+ */
+export const printItemStatus = (item: string, status: ProgressStatus, message: string) => {
+  console.log(`   ${colorize(PROGRESS_STATUS_ICON[status], PROGRESS_STATUS_COLOR[status])} ${item}: ${colorize(message, PROGRESS_STATUS_COLOR[status])}`)
 }

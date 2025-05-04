@@ -5,7 +5,7 @@ import { readPackageJson, readWorkflowFiles, writePackageJson, writeWorkflowFile
 import type { WorkflowFile, WorkflowStatus } from "../types"
 import type { YoutrackService } from "./youtrack.service"
 import { filesHash } from "../tools/hash.tools"
-import { WORKFLOW_STATUS } from "../consts"
+import { WORKFLOW_STATUS, COLORS } from "../consts"
 import { 
   FileOperationError, 
   WorkflowNotFoundError, 
@@ -22,11 +22,11 @@ type WorkflowDataCache = {
   hash: string
 }
 
-type WorkflowProcessResult = {
+export type ActionResult = {
   success: boolean
   skipped: boolean
   error?: Error
-  message?: string
+  message: string
 }
 
 export class ProjectService {
@@ -234,50 +234,59 @@ export class ProjectService {
    * @param workflows Array of workflow names to add
    * @returns Results for each workflow processed
    */
-  public async addWorkflows(workflows: string[]): Promise<Record<string, WorkflowProcessResult>> {
-    const results: Record<string, WorkflowProcessResult> = {}
+  public async addWorkflows(workflows: string[]): Promise<Record<string, ActionResult>> {
+    const results: Record<string, ActionResult> = {}
 
     for (const workflow of workflows) {
-      if (this.isProjectWorkflow(workflow)) {
-        results[workflow] = {
-          success: false,
-          skipped: true,
-          message: "Workflow already exists in the project"
-        }
-        continue
-      }
+      results[workflow] = await this.addWorkflow(workflow)
+    }
 
-      try {
-        const data = await this.cacheYoutrackWorkflow(workflow)
-        if (!data) {
-          results[workflow] = {
-            success: false,
-            skipped: true,
-            message: "Cannot fetch workflow"
-          }
-          continue
-        }
-        
-        await writeWorkflowFiles(data.files, path.join(process.cwd(), workflow))
-        this.setWorkflowHash(workflow, data.hash)
-        
-        results[workflow] = {
-          success: true,
-          skipped: false,
-          message: "Successfully added workflow"
-        }
-      } catch (error) {
-        results[workflow] = {
-          success: false,
-          skipped: false,
-          error: error instanceof Error ? error : new Error(String(error)),
-          message: "Failed to add workflow"
-        }
+    return results
+  }
+
+  /**
+   * Add a single workflow to the project
+   * @param workflow Workflow name to add
+   * @returns Result of the workflow processing
+   */
+  public async addWorkflow(workflow: string): Promise<ActionResult> {
+    if (this.isProjectWorkflow(workflow)) {
+      return {
+        success: false,
+        skipped: true,
+        message: "Workflow already exists in the project"
       }
     }
 
-    this.updatePackageJson()
-    return results
+    try {
+      const data = await this.cacheYoutrackWorkflow(workflow)
+      if (!data) {
+        return {
+          success: false,
+          skipped: true,
+          message: "Cannot fetch workflow"
+        }
+      }
+      
+      await writeWorkflowFiles(data.files, path.join(process.cwd(), workflow))
+      this.setWorkflowHash(workflow, data.hash)
+      
+      // Update package.json with the changed workflows list
+      this.updatePackageJson()
+      
+      return {
+        success: true,
+        skipped: false,
+        message: `${COLORS.FG.GREEN}Added${COLORS.RESET}`
+      }
+    } catch (error) {
+      return {
+        success: false,
+        skipped: false,
+        error: error instanceof Error ? error : new Error(String(error)),
+        message: "Failed to add workflow"
+      }
+    }
   }
 
   /**
@@ -286,62 +295,79 @@ export class ProjectService {
    * @param deleteFiles Whether to delete workflow files from disk
    * @returns Results for each workflow processed
    */
-  public async removeWorkflows(workflows: string[], deleteFiles = false): Promise<Record<string, WorkflowProcessResult>> {
-    const results: Record<string, WorkflowProcessResult> = {}
+  public async removeWorkflows(workflows: string[], deleteFiles = false): Promise<Record<string, ActionResult>> {
+    const results: Record<string, ActionResult> = {}
 
     for (const workflow of workflows) {
-      if (!this.isProjectWorkflow(workflow)) {
-        results[workflow] = {
-          success: false,
-          skipped: true,
-          message: "Workflow doesn't exist in the project"
-        }
-        continue
-      }
+      results[workflow] = await this.removeWorkflow(workflow, deleteFiles)
+    }
 
-      // Remove workflow from the internal list
-      this._workflows = this._workflows.filter((w) => w.name !== workflow)
+    return results
+  }
 
-      // Clear cached data if present
-      if (this._localCache[workflow]) {
-        this._localCache[workflow] = null
+  /**
+   * Remove a workflow from the project
+   * @param workflow Workflow name
+   * @param deleteFiles Whether to also delete the workflow files
+   * @returns Operation result
+   */
+  public async removeWorkflow(workflow: string, deleteFiles = false): Promise<ActionResult> {
+    // Verify workflow exists
+    const workflowInfo = this._workflows.find((w) => w.name === workflow)
+    if (!workflowInfo) {
+      return {
+        success: false,
+        skipped: true,
+        message: "Workflow not found in project"
       }
+    }
 
-      if (this._serverCache[workflow]) {
-        this._serverCache[workflow] = null
-      }
+    // Remove workflow from the internal list
+    this._workflows = this._workflows.filter((w) => w.name !== workflow)
 
-      results[workflow] = {
-        success: true,
-        skipped: false,
-        message: "Removed workflow from project"
-      }
+    // Clear cached data if present
+    if (this._localCache[workflow]) {
+      this._localCache[workflow] = null
+    }
 
-      // Optionally delete the workflow files
-      if (deleteFiles) {
-        const workflowPath = path.join(process.cwd(), workflow)
-        try {
-          await fs.rm(workflowPath, { recursive: true, force: true })
-          results[workflow].message += " and deleted workflow directory"
-        } catch (error) {
-          const fileError = new FileOperationError(
-            "Failed to delete workflow directory",
-            workflowPath,
-            error instanceof Error ? error : undefined
-          )
-          
-          results[workflow] = {
-            success: false,
-            skipped: false,
-            error: fileError,
-            message: fileError.message
-          }
-        }
-      }
+    if (this._serverCache[workflow]) {
+      this._serverCache[workflow] = null
     }
 
     // Update package.json with the changed workflows list
     this.updatePackageJson()
-    return results
+
+    // Base result if we're not deleting files
+    if (!deleteFiles) {
+      return {
+        success: true,
+        skipped: false,
+        message: `${COLORS.FG.RED}Removed${COLORS.RESET}`
+      }
+    }
+
+    // Optionally delete the workflow files
+    const workflowPath = path.join(process.cwd(), workflow)
+    try {
+      await fs.rm(workflowPath, { recursive: true, force: true })
+      return {
+        success: true,
+        skipped: false,
+        message: `${COLORS.FG.RED}Removed${COLORS.RESET}`
+      }
+    } catch (error) {
+      const fileError = new FileOperationError(
+        "Failed to delete workflow directory",
+        workflowPath,
+        error instanceof Error ? error : undefined
+      )
+      
+      return {
+        success: false,
+        skipped: false,
+        error: fileError,
+        message: fileError.message
+      }
+    }
   }
 }

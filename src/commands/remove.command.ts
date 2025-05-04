@@ -1,19 +1,15 @@
 import inquirer from "inquirer"
+import ora from "ora"
 
 import { YoutrackService, ProjectService } from "../services"
-import { isError, colorize } from "../utils"
-import { WorkflowError } from "../errors"
-import { COLORS } from "../consts"
+import { isError, printItemStatus } from "../utils"
+import { PROGRESS_STATUS } from "../consts"
 
 /**
- * Command handler for removing workflows from the project
- * @param workflows Workflow names to remove
- * @param options Command options
+ * Command to remove workflows from a project
+ * @returns Results of the command execution
  */
-export const removeCommand = async (
-  workflows: string[] = [],
-  { host = "", token = "", deleteFiles = false } = {},
-): Promise<void> => {
+export const removeCommand = async (workflows: string[] = [], { host = "", token = "", deleteFiles = false } = {}): Promise<void> => {
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
   }
@@ -21,75 +17,87 @@ export const removeCommand = async (
     return
   }
 
-  const youtrack = new YoutrackService(host, token)
-  const projectService = new ProjectService(youtrack)
+  // Create services
+  const youtrackService = new YoutrackService(host, token)
+  const projectService = new ProjectService(youtrackService)
 
-  // If no workflows specified, prompt user to select from existing project workflows
-  if (!workflows.length) {
-    // Get the workflows currently in the project
-    const projectWorkflows = projectService.workflows.map((w) => w.name)
+  if (workflows.length === 0) {
+    try {
+      // Get project workflows from the workflows property
+      const projectWorkflows = projectService.workflows.map((w) => w.name)
 
-    if (projectWorkflows.length === 0) {
-      console.log("No workflows found in this project. Nothing to remove.")
-      return
-    }
+      if (projectWorkflows.length === 0) {
+        console.log("No workflows in project")
+        return
+      }
 
-    const selected = await inquirer.prompt([
-      {
-        type: "checkbox",
-        name: "workflows",
-        message: "Select workflows to remove:",
-        choices: projectWorkflows,
-      },
-    ])
-
-    if (!selected.workflows.length) {
-      console.log("No workflows selected. Exiting.")
-      return
-    }
-
-    console.log("Selected workflows to remove:", selected.workflows)
-    workflows.push(...selected.workflows)
-
-    // Confirm workflow deletion if deleteFiles option is true
-    if (!deleteFiles) {
-      const confirm = await inquirer.prompt([
+      // Show prompt to select workflows to remove
+      const selected = await inquirer.prompt([
         {
-          type: "confirm",
-          name: "deleteFiles",
-          message: "This will delete the workflow files from your filesystem. Continue?",
-          default: false,
+          type: "checkbox",
+          name: "workflows",
+          message: "Select workflows to remove:",
+          choices: projectWorkflows,
         },
       ])
 
-      if (confirm.deleteFiles) {
-        console.log("Confirmed file deletion. Workflows will be removed from the project and files will be deleted.")
-        deleteFiles = true
+      if (!selected.workflows || selected.workflows.length === 0) {
+        console.log("No workflows selected")
+        return
       }
+
+      // Use selected workflows instead of modifying the parameter
+      workflows.push(...selected.workflows)
+    } catch (error) {
+      console.error("Error fetching project workflows:", error)
+      return
     }
   }
 
-  try {
-    const results = await projectService.removeWorkflows(workflows, deleteFiles)
+  // Confirm workflow deletion if deleteFiles option is true
+  if (!deleteFiles) {
+    const confirm = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "deleteFiles",
+        message: "This will delete the workflow files from your filesystem. Continue?",
+        default: false,
+      },
+    ])
 
-    // Process and display results for each workflow
-    for (const [workflow, result] of Object.entries(results)) {
-      if (result.success) {
-        console.log(`${colorize("✓", COLORS.FG.GREEN)} ${workflow}: ${result.message}`)
-      } else if (result.skipped) {
-        console.log(`${colorize("⧖", COLORS.FG.YELLOW)} ${workflow}: ${result.message}`)
-      } else {
-        console.log(`${colorize("✗", COLORS.FG.RED)} ${workflow}: ${result.message}`)
-        if (result.error) {
-          console.error(`  Error details: ${result.error.message}`)
-        }
-      }
-    }
-  } catch (error) {
-    if (error instanceof WorkflowError) {
-      console.error(`Error removing workflows: ${error.message}`)
-    } else {
-      console.error("Error removing workflows:", error)
-    }
+    deleteFiles = confirm.deleteFiles
   }
+
+  // Process workflows and track progress
+  let completedCount = 0
+
+  for (const workflow of workflows) {
+    // Create spinner for tracking progress
+    const spinner = ora({
+      text: `Removing workflow from project (${completedCount}/${workflows.length})`,
+      color: "blue",
+    }).start()
+
+    try {
+      const result = await projectService.removeWorkflow(workflow, deleteFiles)
+
+      // Stop spinner to print status line
+      spinner.stop()
+
+      const status = result.skipped
+        ? PROGRESS_STATUS.WARNING
+        : result.success
+          ? PROGRESS_STATUS.SUCCESS
+          : PROGRESS_STATUS.FAILED
+
+      printItemStatus(workflow, status, result.message)
+    } catch (err) {
+      // Failed to remove workflow
+      spinner.stop()
+      printItemStatus(workflow, PROGRESS_STATUS.FAILED, err instanceof Error ? err.message : "Failed to remove workflow")
+    }
+    completedCount++
+  }
+
+  console.log(`\nSuccessfully removed workflows: ${workflows.length}/${workflows.length}`)
 }

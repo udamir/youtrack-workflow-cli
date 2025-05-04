@@ -19,12 +19,12 @@ export const WORKFLOW_SYMBOL = {
 } as const
 
 export const WORKFLOW_DESCRIPTION = {
-  [WORKFLOW_STATUS.SYNCED]: "Local files match YouTrack version",
-  [WORKFLOW_STATUS.MODIFIED]: "Local files have changes not in YouTrack",
-  [WORKFLOW_STATUS.OUTDATED]: "YouTrack version is ahead of local files",
-  [WORKFLOW_STATUS.CONFLICT]: "Both local and YouTrack versions have changes",
-  [WORKFLOW_STATUS.MISSING]: "Workflow exists in project but no local files",
-  [WORKFLOW_STATUS.NEW]: "Local files exist but workflow not in YouTrack",
+  [WORKFLOW_STATUS.SYNCED]: "Synced",
+  [WORKFLOW_STATUS.MODIFIED]: "Modified locally",
+  [WORKFLOW_STATUS.OUTDATED]: "Outdated (server has newer version)",
+  [WORKFLOW_STATUS.CONFLICT]: "Conflict",
+  [WORKFLOW_STATUS.MISSING]: "Missing locally",
+  [WORKFLOW_STATUS.NEW]: "New (not on server)",
   [WORKFLOW_STATUS.UNKNOWN]: "Unknown status",
 } as const
 
@@ -43,17 +43,18 @@ export const COLORS = {
     CYAN: "\x1b[36m",
     WHITE: "\x1b[37m",
   },
-  // Text modifiers
+  // Styles
   STYLE: {
-    RESET: "\x1b[0m",
     BRIGHT: "\x1b[1m",
     DIM: "\x1b[2m",
     ITALIC: "\x1b[3m",
     UNDERLINE: "\x1b[4m",
   },
+  // Reset code
+  RESET: "\x1b[0m"
 } as const
 
-// Color configurations for each workflow status
+// Color mapping for workflow status colors
 export const STATUS_COLORS = {
   [WORKFLOW_STATUS.SYNCED]: COLORS.FG.GREEN,
   [WORKFLOW_STATUS.MODIFIED]: COLORS.FG.YELLOW,
@@ -62,4 +63,23 @@ export const STATUS_COLORS = {
   [WORKFLOW_STATUS.MISSING]: COLORS.FG.MAGENTA,
   [WORKFLOW_STATUS.NEW]: COLORS.FG.CYAN,
   [WORKFLOW_STATUS.UNKNOWN]: COLORS.FG.WHITE,
+} as const
+
+export const PROGRESS_STATUS = {
+  SUCCESS: "success",
+  WARNING: "warning",
+  FAILED: "failed"
+} as const
+
+export const PROGRESS_STATUS_ICON = {
+  [PROGRESS_STATUS.SUCCESS]: '✓',
+  [PROGRESS_STATUS.WARNING]: '⚠',
+  [PROGRESS_STATUS.FAILED]: '✗',
+} as const
+
+// Color mapping for workflow status colors
+export const PROGRESS_STATUS_COLOR = {
+  [PROGRESS_STATUS.SUCCESS]: COLORS.FG.GREEN,
+  [PROGRESS_STATUS.WARNING]: COLORS.FG.YELLOW,
+  [PROGRESS_STATUS.FAILED]: COLORS.FG.RED,
 } as const

@@ -1,6 +1,6 @@
 {
   "name": "youtrack-workflow-cli",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Youtrack workflow CLI",
   "repository": {
     "type": "git",
@@ -28,13 +28,16 @@
   "keywords": [
     "youtrack",
     "workflow",
-    "cli"
+    "scripts",
+    "cli",
+    "ytw"
   ],
   "dependencies": {
     "commander": "^13.1.0",
     "dotenv": "^16.5.0",
     "inquirer": "^12.6.0",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "ora": "^8.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -60,7 +63,6 @@
     ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/out/",
       "/dist/"
     ]
   }
