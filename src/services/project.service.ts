@@ -1,25 +1,14 @@
-import * as path from "node:path"
-import { promises as fs } from "node:fs"
-
-import { readPackageJson, readWorkflowFiles, writePackageJson, writeWorkflowFiles } from "../tools/fs.tools"
-import type { WorkflowFile, WorkflowStatus } from "../types"
+import { readLocalWorkflowFiles, writeLocalWorkflowFiles, readLockFile, writeLockFile, isLocalWorkflow, deleteLocalWorkflowFiles } from "../tools/fs.tools"
+import { WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
+import type { WorkflowFile, WorkflowStatus, WorkflowHash } from "../types"
+import { calculateWorkflowHash } from "../tools/hash.tools"
 import type { YoutrackService } from "./youtrack.service"
-import { filesHash } from "../tools/hash.tools"
 import { WORKFLOW_STATUS, COLORS } from "../consts"
-import { 
-  FileOperationError, 
-  WorkflowNotFoundError, 
-  WorkflowNotInProjectError 
-} from "../errors"
-
-type WorkflowCache = {
-  name: string
-  originalHash: string
-}
 
 type WorkflowDataCache = {
   files: WorkflowFile[]
   hash: string
+  fileHashes: Record<string, string>
 }
 
 export type ActionResult = {
@@ -30,63 +19,30 @@ export type ActionResult = {
 }
 
 export class ProjectService {
-  private _workflows: WorkflowCache[] = []
+  private _workflows: Record<string, WorkflowHash> = {}
   private _serverCache: Record<string, WorkflowDataCache | null> = {}
   private _localCache: Record<string, WorkflowDataCache | null> = {}
-  private _pkgPath: string
+
 
   constructor(private readonly youtrack: YoutrackService) {
-    this._pkgPath = path.resolve(process.cwd(), "package.json")
-    const data = readPackageJson(this.pkgPath)
-    this._workflows = Object.keys(data.workflows || {}).map((name) => ({ name, originalHash: data.workflows[name] }))
-  }
-
-  get pkgPath() {
-    return this._pkgPath
+    const data = readLockFile()
+    this._workflows = data?.workflows || {}
   }
 
   get workflows() {
     return this._workflows
   }
 
-  public isProjectWorkflow(name: string): boolean {
-    return this.workflows.some((w) => w.name === name)
-  }
-
   /**
-   * Set the original hash of a workflow
-   * @param name Workflow name
-   * @param hash Original hash of the workflow
-   */
-  public setWorkflowHash(name: string, hash: string) {
-    const workflow = this._workflows.find((w) => w.name === name)
-    if (!workflow) {
-      this._workflows.push({ name, originalHash: hash })
-      return
-    }
-    workflow.originalHash = hash
-  }
-
-  /**
-   * Save workflows to package.json
+   * Save workflows to lock file
    * @param workflows Workflows to save
    */
-  public updatePackageJson(workflows?: Record<string, string>) {
-    const pkg = readPackageJson(this.pkgPath)
+  public updateLockFile(workflows?: Record<string, WorkflowHash>) {
+    const pkg = readLockFile()
 
-    if (!workflows) {
-      pkg.workflows = this._workflows.reduce(
-        (acc, w) => {
-          acc[w.name] = w.originalHash
-          return acc
-        },
-        {} as Record<string, string>,
-      )
-    } else {
-      pkg.workflows = workflows
-    }
+    pkg.workflows = workflows || this._workflows
 
-    writePackageJson(this.pkgPath, pkg)
+    writeLockFile(pkg)
   }
 
   /**
@@ -100,10 +56,13 @@ export class ProjectService {
     }
 
     try {
-      const files = await readWorkflowFiles(path.join(process.cwd(), name))
+      const localWorkflowFiles = await readLocalWorkflowFiles(name)
+      const { hash, fileHashes: files } = calculateWorkflowHash(localWorkflowFiles)
+      
       this._localCache[name] = {
-        files,
-        hash: filesHash(files),
+        files: localWorkflowFiles,
+        hash,
+        fileHashes: files
       }
     } catch (error) {
       this._localCache[name] = null
@@ -119,7 +78,7 @@ export class ProjectService {
    * @throws {WorkflowNotFoundError} If the workflow files don't exist
    */
   public async uploadWorkflow(name: string) {
-    if (!this.isProjectWorkflow(name)) {
+    if (!isLocalWorkflow(name)) {
       throw new WorkflowNotInProjectError(name)
     }
 
@@ -127,13 +86,12 @@ export class ProjectService {
     if (!localCache) {
       throw new WorkflowNotFoundError(name)
     }
+    const { files, ...rest } = localCache
 
-    await this.youtrack.uploadWorkflow(localCache.files)
-    const serverCache = await this.cacheYoutrackWorkflow(name)
-    if (serverCache) {
-      this.setWorkflowHash(name, serverCache.hash)
-      this.updatePackageJson()
-    }
+    await this.youtrack.uploadWorkflow(files)
+
+    this._workflows[name] = rest
+    this.updateLockFile()
   }
 
   /**
@@ -147,13 +105,16 @@ export class ProjectService {
     }
 
     try {
-      const files = await this.youtrack.fetchWorkflow(name)
-      if (!files) {
+      const workflowFiles = await this.youtrack.fetchWorkflow(name)
+      if (!workflowFiles) {
         this._serverCache[name] = null
       } else {
+        const { hash, fileHashes: files } = calculateWorkflowHash(workflowFiles)
+        
         this._serverCache[name] = {
-          files,
-          hash: filesHash(files),
+          files: workflowFiles,
+          hash,
+          fileHashes: files
         }
       }
     } catch (error) {
@@ -173,8 +134,9 @@ export class ProjectService {
     if (!data) {
       throw new WorkflowNotFoundError(name)
     }
-    await writeWorkflowFiles(data.files, path.join(process.cwd(), name))
-    this.setWorkflowHash(name, data.hash)
+    const { files, ...rest } = data
+    await writeLocalWorkflowFiles(files, name)
+    this._workflows[name] = rest
   }
 
   /**
@@ -183,24 +145,24 @@ export class ProjectService {
    * @returns Workflow status
    */
   public async workflowStatus(name: string): Promise<WorkflowStatus> {
-    const workflow = this._workflows.find((w) => w.name === name)
+    const workflow = this._workflows[name]
     const serverCache = await this.cacheYoutrackWorkflow(name)
     const localCache = await this.cacheLocalWorkflow(name)
 
     switch (true) {
-      case !workflow:
+      case workflow === undefined:
         return WORKFLOW_STATUS.UNKNOWN
-      case !localCache:
+      case localCache === undefined:
         return WORKFLOW_STATUS.MISSING
-      case !serverCache:
+      case serverCache === undefined:
         return WORKFLOW_STATUS.NEW
-      case workflow?.originalHash !== localCache?.hash &&
-        workflow?.originalHash !== serverCache?.hash &&
+      case workflow.hash !== localCache?.hash &&
+        workflow.hash !== serverCache?.hash &&
         localCache?.hash !== serverCache?.hash:
         return WORKFLOW_STATUS.CONFLICT
-      case workflow?.originalHash !== localCache?.hash:
+      case workflow.hash !== localCache?.hash:
         return WORKFLOW_STATUS.MODIFIED
-      case workflow?.originalHash !== serverCache?.hash:
+      case workflow.hash !== serverCache?.hash:
         return WORKFLOW_STATUS.OUTDATED
       default:
         return WORKFLOW_STATUS.SYNCED
@@ -208,49 +170,77 @@ export class ProjectService {
   }
 
   /**
-   * Check the status of all workflows in the project
-   * @returns Object containing workflow names and their statuses
+   * Get file-level status for a workflow
+   * @param name Workflow name
+   * @returns Record of filename to status mapping
    */
-  public async checkStatus(): Promise<Record<string, WorkflowStatus>> {
+  public async getWorkflowFileStatus(name: string): Promise<Record<string, WorkflowStatus>> {
+    const workflowLockData = this._workflows[name]
+    if (!workflowLockData) {
+      // If no lock data, we can't determine file-level status
+      return {}
+    }
+
+    // Get server and local caches
+    const serverCache = await this.cacheYoutrackWorkflow(name)
+    const localCache = await this.cacheLocalWorkflow(name)
+
+    if (!localCache && !serverCache) {
+      return {}
+    }
+
     const results: Record<string, WorkflowStatus> = {}
-    for (const workflow of this.workflows) {
-      const status = await this.workflowStatus(workflow.name)
-      results[workflow.name] = status
+    const storedFileHashes = workflowLockData.fileHashes || {}
+    
+    // Process local files first
+    if (localCache) {
+      for (const [fileName, fileHash] of Object.entries(localCache.fileHashes)) {
+        const storedHash = storedFileHashes[fileName]
+        const serverHash = serverCache?.fileHashes[fileName]
+
+        if (!storedHash) {
+          // New local file
+          results[fileName] = WORKFLOW_STATUS.NEW
+        } else if (!serverHash) {
+          // File exists locally but not on server
+          results[fileName] = WORKFLOW_STATUS.NEW
+        } else if (storedHash !== fileHash && storedHash !== serverHash && fileHash !== serverHash) {
+          // Conflict: all three hashes are different
+          results[fileName] = WORKFLOW_STATUS.CONFLICT
+        } else if (storedHash !== fileHash) {
+          // Local file modified
+          results[fileName] = WORKFLOW_STATUS.MODIFIED
+        } else if (storedHash !== serverHash) {
+          // Server file modified
+          results[fileName] = WORKFLOW_STATUS.OUTDATED
+        } else {
+          // File in sync
+          results[fileName] = WORKFLOW_STATUS.SYNCED
+        }
+      }
     }
+
+    // Process server files that might not exist locally
+    if (serverCache) {
+      for (const fileName of Object.keys(serverCache.fileHashes)) {
+        if (results[fileName] === undefined) {
+          // File exists on server but not locally
+          results[fileName] = WORKFLOW_STATUS.MISSING
+        }
+      }
+    }
+
     return results
   }
 
   /**
-   * Get a list of available workflows in YouTrack
-   * @returns Array of workflow names
-   */
-  public async availableWorkflows(): Promise<string[]> {
-    const workflows = await this.youtrack.fetchWorkflows()
-    return workflows.filter((w) => !this.isProjectWorkflow(w))
-  }
-
-  /**
-   * Add new workflows to the project
-   * @param workflows Array of workflow names to add
-   * @returns Results for each workflow processed
-   */
-  public async addWorkflows(workflows: string[]): Promise<Record<string, ActionResult>> {
-    const results: Record<string, ActionResult> = {}
-
-    for (const workflow of workflows) {
-      results[workflow] = await this.addWorkflow(workflow)
-    }
-
-    return results
-  }
-
-  /**
-   * Add a single workflow to the project
-   * @param workflow Workflow name to add
-   * @returns Result of the workflow processing
+   * Add a workflow to the project
+   * @param name Workflow name
+   * @param skipDownload Skip downloading workflow files from YouTrack
+   * @returns Action result
    */
   public async addWorkflow(workflow: string): Promise<ActionResult> {
-    if (this.isProjectWorkflow(workflow)) {
+    if (isLocalWorkflow(workflow)) {
       return {
         success: false,
         skipped: true,
@@ -268,12 +258,13 @@ export class ProjectService {
         }
       }
       
-      await writeWorkflowFiles(data.files, path.join(process.cwd(), workflow))
-      this.setWorkflowHash(workflow, data.hash)
+      const { files, ...rest } = data
+      await writeLocalWorkflowFiles(files, workflow)
+      this._workflows[workflow] = rest
       
-      // Update package.json with the changed workflows list
-      this.updatePackageJson()
-      
+      // Update lock file with the changed workflows list
+      this.updateLockFile()
+
       return {
         success: true,
         skipped: false,
@@ -292,14 +283,13 @@ export class ProjectService {
   /**
    * Remove workflows from the project
    * @param workflows Array of workflow names to remove
-   * @param deleteFiles Whether to delete workflow files from disk
    * @returns Results for each workflow processed
    */
-  public async removeWorkflows(workflows: string[], deleteFiles = false): Promise<Record<string, ActionResult>> {
+  public async removeWorkflows(workflows: string[]): Promise<Record<string, ActionResult>> {
     const results: Record<string, ActionResult> = {}
 
     for (const workflow of workflows) {
-      results[workflow] = await this.removeWorkflow(workflow, deleteFiles)
+      results[workflow] = await this.removeWorkflow(workflow)
     }
 
     return results
@@ -307,67 +297,71 @@ export class ProjectService {
 
   /**
    * Remove a workflow from the project
-   * @param workflow Workflow name
-   * @param deleteFiles Whether to also delete the workflow files
-   * @returns Operation result
+   * @param name Workflow name
+   * @returns Action result
    */
-  public async removeWorkflow(workflow: string, deleteFiles = false): Promise<ActionResult> {
-    // Verify workflow exists
-    const workflowInfo = this._workflows.find((w) => w.name === workflow)
-    if (!workflowInfo) {
-      return {
-        success: false,
-        skipped: true,
-        message: "Workflow not found in project"
-      }
-    }
-
-    // Remove workflow from the internal list
-    this._workflows = this._workflows.filter((w) => w.name !== workflow)
-
-    // Clear cached data if present
-    if (this._localCache[workflow]) {
-      this._localCache[workflow] = null
-    }
-
-    if (this._serverCache[workflow]) {
-      this._serverCache[workflow] = null
-    }
-
-    // Update package.json with the changed workflows list
-    this.updatePackageJson()
-
-    // Base result if we're not deleting files
-    if (!deleteFiles) {
-      return {
-        success: true,
-        skipped: false,
-        message: `${COLORS.FG.RED}Removed${COLORS.RESET}`
-      }
-    }
-
-    // Optionally delete the workflow files
-    const workflowPath = path.join(process.cwd(), workflow)
+  public async removeWorkflow(name: string): Promise<ActionResult> {
     try {
-      await fs.rm(workflowPath, { recursive: true, force: true })
+      if (!isLocalWorkflow(name)) {
+        return {
+          success: false,
+          skipped: true,
+          message: `Workflow ${name} is not in project`,
+        }
+      }
+
+      await deleteLocalWorkflowFiles(name)
+
+      // Remove from lock file
+      delete this._workflows[name]
+      writeLockFile({ workflows: this._workflows })
+
       return {
         success: true,
         skipped: false,
-        message: `${COLORS.FG.RED}Removed${COLORS.RESET}`
+        message: `Workflow ${name} removed from project`,
       }
     } catch (error) {
-      const fileError = new FileOperationError(
-        "Failed to delete workflow directory",
-        workflowPath,
-        error instanceof Error ? error : undefined
-      )
-      
       return {
         success: false,
         skipped: false,
-        error: fileError,
-        message: fileError.message
+        error: error as Error,
+        message: `Failed to remove workflow ${name}: ${(error as Error).message}`,
       }
     }
+  }
+
+  /**
+   * Get workflow file hashes
+   * @param workflowName Workflow name
+   * @returns Record of file hashes or empty object if not found
+   */
+  public async getWorkflowFileHashes(workflowName: string): Promise<Record<string, string>> {
+    const workflowData = this._workflows[workflowName]
+    return workflowData?.fileHashes || {}
+  }
+
+  /**
+   * Get a list of available workflows in YouTrack
+   * @returns Array of workflow names
+   */
+  public async availableWorkflows(): Promise<string[]> {
+    const workflows = await this.youtrack.fetchWorkflows()
+    return workflows.filter((w) => !this._workflows[w])
+  }
+
+  /**
+   * Check the status of all workflows in the project
+   * @returns Object containing workflow names and their statuses
+   */
+  public async checkStatus(): Promise<Record<string, WorkflowStatus>> {
+    const results: Record<string, WorkflowStatus> = {}
+
+    for (const workflow of Object.keys(this._workflows)) {
+      const status = await this.workflowStatus(workflow)
+      results[workflow] = status
+    }
+    
+    return results
   }
 }

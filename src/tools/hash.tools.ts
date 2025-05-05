@@ -1,6 +1,6 @@
 import * as crypto from "node:crypto"
 
-import type { WorkflowFile } from "../types"
+import type { WorkflowFile, WorkflowHash } from "../types"
 
 /**
  * Calculate MD5 hash of a buffer
@@ -14,17 +14,26 @@ export const calculateHash = (buffer: Buffer): string => {
 /**
  * Calculate a hash for a collection of files based on their names and content hashes
  * @param files Array of filename and hash pairs
- * @returns Combined hash of all files
+ * @returns Workflow hash and individual file hashes
  */
-export const filesHash = (files: WorkflowFile[]): string => {
-  const fileHashes = files.map(({ name, file }) => `${name}:${calculateHash(file)}`)
+export const calculateWorkflowHash = (files: WorkflowFile[]): WorkflowHash => {
+  const fileHashes = files.reduce(
+    (acc, { name, file }) => {
+      acc[name] = calculateHash(file)
+      return acc
+    },
+    {} as Record<string, string>,
+  )
 
   // Sort hashes by filename to ensure consistent order
-  const sortedFiles = [...fileHashes].sort((a, b) => a.localeCompare(b))
-
-  // Create a combined string of all file hashes
-  const combinedHashes = sortedFiles.join("|")
+  const workflowFileHashes = Object.entries(fileHashes)
+    .map(([name, hash]) => `${name}:${hash}`)
+    .sort((a, b) => a.localeCompare(b))
+    .join("|")
 
   // Calculate final hash of the combined string
-  return calculateHash(Buffer.from(combinedHashes))
+  return {
+    hash: calculateHash(Buffer.from(workflowFileHashes)),
+    fileHashes: fileHashes,
+  }
 }

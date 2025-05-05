@@ -1,32 +1,4 @@
-export const WORKFLOW_STATUS = {
-  SYNCED: "Synced",
-  MODIFIED: "Modified",
-  OUTDATED: "Outdated",
-  CONFLICT: "Conflict",
-  MISSING: "Missing",
-  NEW: "New",
-  UNKNOWN: "Unknown",
-} as const
-
-export const WORKFLOW_SYMBOL = {
-  [WORKFLOW_STATUS.SYNCED]: "✓",
-  [WORKFLOW_STATUS.MODIFIED]: "↑",
-  [WORKFLOW_STATUS.OUTDATED]: "↓",
-  [WORKFLOW_STATUS.CONFLICT]: "!",
-  [WORKFLOW_STATUS.MISSING]: "?",
-  [WORKFLOW_STATUS.NEW]: "+",
-  [WORKFLOW_STATUS.UNKNOWN]: "-",
-} as const
-
-export const WORKFLOW_DESCRIPTION = {
-  [WORKFLOW_STATUS.SYNCED]: "Synced",
-  [WORKFLOW_STATUS.MODIFIED]: "Modified locally",
-  [WORKFLOW_STATUS.OUTDATED]: "Outdated (server has newer version)",
-  [WORKFLOW_STATUS.CONFLICT]: "Conflict",
-  [WORKFLOW_STATUS.MISSING]: "Missing locally",
-  [WORKFLOW_STATUS.NEW]: "New (not on server)",
-  [WORKFLOW_STATUS.UNKNOWN]: "Unknown status",
-} as const
+export const LOCK_FILE_NAME = "ytw.lock"
 
 /**
  * ANSI color codes for terminal output
@@ -54,15 +26,52 @@ export const COLORS = {
   RESET: "\x1b[0m"
 } as const
 
-// Color mapping for workflow status colors
-export const STATUS_COLORS = {
-  [WORKFLOW_STATUS.SYNCED]: COLORS.FG.GREEN,
-  [WORKFLOW_STATUS.MODIFIED]: COLORS.FG.YELLOW,
-  [WORKFLOW_STATUS.OUTDATED]: COLORS.FG.BLUE,
-  [WORKFLOW_STATUS.CONFLICT]: COLORS.FG.RED,
-  [WORKFLOW_STATUS.MISSING]: COLORS.FG.MAGENTA,
-  [WORKFLOW_STATUS.NEW]: COLORS.FG.CYAN,
-  [WORKFLOW_STATUS.UNKNOWN]: COLORS.FG.WHITE,
+export const WORKFLOW_STATUS = {
+  SYNCED: "Synced",
+  MODIFIED: "Modified",
+  OUTDATED: "Outdated",
+  CONFLICT: "Conflict",
+  MISSING: "Missing",
+  NEW: "New",
+  UNKNOWN: "Unknown",
+} as const
+
+export const WORKFLOW_STATUS_DATA = {
+  [WORKFLOW_STATUS.SYNCED]: {
+    icon: "✓",
+    color: COLORS.FG.GREEN,
+    description: "Synced"
+  },
+  [WORKFLOW_STATUS.MODIFIED]: {
+    icon: "↑",
+    color: COLORS.FG.YELLOW,
+    description: "Modified locally"
+  },
+  [WORKFLOW_STATUS.OUTDATED]: {
+    icon: "↓",
+    color: COLORS.FG.BLUE,
+    description: "Outdated (server has newer version)"
+  },
+  [WORKFLOW_STATUS.CONFLICT]: {
+    icon: "!",
+    color: COLORS.FG.RED,
+    description: "Conflict"
+  },
+  [WORKFLOW_STATUS.MISSING]: {
+    icon: "?",
+    color: COLORS.FG.MAGENTA,
+    description: "Missing locally"
+  },
+  [WORKFLOW_STATUS.NEW]: {
+    icon: "+",
+    color: COLORS.FG.CYAN,
+    description: "New (not on server)"
+  },
+  [WORKFLOW_STATUS.UNKNOWN]: {
+    icon: "-",
+    color: COLORS.FG.WHITE,
+    description: "Unknown status"
+  },
 } as const
 
 export const PROGRESS_STATUS = {
@@ -71,15 +80,17 @@ export const PROGRESS_STATUS = {
   FAILED: "failed"
 } as const
 
-export const PROGRESS_STATUS_ICON = {
-  [PROGRESS_STATUS.SUCCESS]: '✓',
-  [PROGRESS_STATUS.WARNING]: '⚠',
-  [PROGRESS_STATUS.FAILED]: '✗',
-} as const
-
-// Color mapping for workflow status colors
-export const PROGRESS_STATUS_COLOR = {
-  [PROGRESS_STATUS.SUCCESS]: COLORS.FG.GREEN,
-  [PROGRESS_STATUS.WARNING]: COLORS.FG.YELLOW,
-  [PROGRESS_STATUS.FAILED]: COLORS.FG.RED,
+export const PROGRESS_STATUS_DATA = {
+  [PROGRESS_STATUS.SUCCESS]: {
+    icon: '✓',
+    color: COLORS.FG.GREEN,
+  },
+  [PROGRESS_STATUS.WARNING]: {
+    icon: '⚠',
+    color: COLORS.FG.YELLOW,
+  },
+  [PROGRESS_STATUS.FAILED]: {
+    icon: '✗',
+    color: COLORS.FG.RED,
+  },
 } as const

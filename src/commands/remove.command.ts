@@ -9,7 +9,7 @@ import { PROGRESS_STATUS } from "../consts"
  * Command to remove workflows from a project
  * @returns Results of the command execution
  */
-export const removeCommand = async (workflows: string[] = [], { host = "", token = "", deleteFiles = false } = {}): Promise<void> => {
+export const removeCommand = async (workflows: string[] = [], { host = "", token = "" } = {}): Promise<void> => {
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
   }
@@ -24,7 +24,7 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
   if (workflows.length === 0) {
     try {
       // Get project workflows from the workflows property
-      const projectWorkflows = projectService.workflows.map((w) => w.name)
+      const projectWorkflows = Object.keys(projectService.workflows)
 
       if (projectWorkflows.length === 0) {
         console.log("No workflows in project")
@@ -54,20 +54,6 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
     }
   }
 
-  // Confirm workflow deletion if deleteFiles option is true
-  if (!deleteFiles) {
-    const confirm = await inquirer.prompt([
-      {
-        type: "confirm",
-        name: "deleteFiles",
-        message: "This will delete the workflow files from your filesystem. Continue?",
-        default: false,
-      },
-    ])
-
-    deleteFiles = confirm.deleteFiles
-  }
-
   // Process workflows and track progress
   let completedCount = 0
 
@@ -79,7 +65,7 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
     }).start()
 
     try {
-      const result = await projectService.removeWorkflow(workflow, deleteFiles)
+      const result = await projectService.removeWorkflow(workflow)
 
       // Stop spinner to print status line
       spinner.stop()
@@ -94,7 +80,11 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
     } catch (err) {
       // Failed to remove workflow
       spinner.stop()
-      printItemStatus(workflow, PROGRESS_STATUS.FAILED, err instanceof Error ? err.message : "Failed to remove workflow")
+      printItemStatus(
+        workflow,
+        PROGRESS_STATUS.FAILED,
+        err instanceof Error ? err.message : "Failed to remove workflow",
+      )
     }
     completedCount++
   }

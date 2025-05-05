@@ -37,7 +37,7 @@ export const pushCommand = async (
         type: "checkbox",
         name: "workflows",
         message: "Select workflows to push to YouTrack:",
-        choices: projectService.workflows.map((w) => w.name),
+        choices: Object.keys(projectService.workflows),
       },
     ])
 
@@ -51,7 +51,7 @@ export const pushCommand = async (
     // Case: No arguments - show status and let user select workflows
     try {
       // Get all workflow statuses
-      const availableWorkflows = projectService.workflows.map(w => w.name)
+      const availableWorkflows = Object.keys(projectService.workflows)
       
       // Check statuses of workflows for better selection
       const statuses: Record<string, string> = {}

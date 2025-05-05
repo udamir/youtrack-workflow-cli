@@ -93,7 +93,6 @@ npx ytw remove [workflow-name...]
 Removes workflows from your project and optionally deletes the associated files.
 
 Options:
-- If `--delete-files` is specified, the workflow files will be deleted from disk.
 - If no workflow name is provided, it will prompt you to select which workflows to remove from those in your project.
 
 ### Status

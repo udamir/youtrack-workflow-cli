@@ -37,7 +37,7 @@ export const pullCommand = async (
     // Special case: '@' - prompt user to select workflows with status info
     try {
       // Get all workflow statuses
-      const availableWorkflows = projectService.workflows.map(w => w.name)
+      const availableWorkflows = Object.keys(projectService.workflows)
       
       // Check statuses of workflows for better selection
       const statuses: Record<string, string> = {}
@@ -95,7 +95,7 @@ export const pullCommand = async (
   } else {
     // Case: No arguments - pull all project workflows
     console.log("Pulling all project workflows...")
-    workflowsToProcess = projectService.workflows.map((w) => w.name)
+    workflowsToProcess = Object.keys(projectService.workflows)
   }
 
   console.log(`Will pull ${workflowsToProcess.length} workflow(s)`)

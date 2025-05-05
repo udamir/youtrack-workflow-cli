@@ -1,9 +1,11 @@
-import { ProjectService } from "../../src/services/project.service"
-import { YoutrackService } from "../../src/services/youtrack.service"
-import { TestHelper } from "./test-helpers"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import * as crypto from "node:crypto"
+
+import { YoutrackService } from "../../src/services/youtrack.service"
+import { ProjectService } from "../../src/services/project.service"
+import { readLockFile } from "../../src/tools/lock.tools"
+import { TestHelper } from "./test-helpers"
 
 describe("ProjectService Integration", () => {
   let helper: TestHelper
@@ -37,21 +39,20 @@ describe("ProjectService Integration", () => {
   })
 
   describe("Workflow Management", () => {
-    it("should update package.json with workflow information", async () => {
+    it("should update lock file with workflow information", async () => {
       // Arrange
       const testHash = "test-hash-value"
 
       // Act
       projectService.setWorkflowHash(testWorkflowName, testHash)
-      projectService.updatePackageJson()
+      projectService.updateLockFile()
 
       // Assert
-      const pkgPath = path.join(process.cwd(), "package.json")
-      const pkgContent = await fs.promises.readFile(pkgPath, "utf-8")
-      const pkg = JSON.parse(pkgContent)
+      const lockData = readLockFile()
 
-      expect(pkg.workflows).toBeDefined()
-      expect(pkg.workflows[testWorkflowName]).toBe(testHash)
+      expect(lockData.workflows).toBeDefined()
+      expect(lockData.workflows[testWorkflowName]).toBeDefined()
+      expect(lockData.workflows[testWorkflowName].hash).toBe(testHash)
     })
 
     it("should cache local workflow files correctly", async () => {
@@ -90,15 +91,14 @@ describe("ProjectService Integration", () => {
       expect(initialCache).toBeDefined()
       const initialHash = initialCache!.hash
 
-      // 2. Set the original hash in package.json
+      // 2. Set the original hash in lock file
       projectService.setWorkflowHash(testWorkflowName, initialHash)
-      projectService.updatePackageJson()
+      projectService.updateLockFile()
 
       // 3. Verify that the current status shows files match original
-      const pkgPath = path.join(process.cwd(), "package.json")
-      const pkgContent = await fs.promises.readFile(pkgPath, "utf-8")
-      const pkg = JSON.parse(pkgContent)
-      expect(pkg.workflows[testWorkflowName]).toBe(initialHash)
+      const lockData = readLockFile()
+      expect(lockData.workflows[testWorkflowName]).toBeDefined()
+      expect(lockData.workflows[testWorkflowName].hash).toBe(initialHash)
 
       // 4. Modify the workflow.js file
       const workflowJsPath = path.join(process.cwd(), testWorkflowName, "workflow.js")
@@ -121,9 +121,9 @@ describe("ProjectService Integration", () => {
         // 7. Verify hash has changed
         expect(modifiedCache?.hash).not.toEqual(initialHash)
 
-        // 8. Verify that the local hash differs from package.json hash
+        // 8. Verify that the local hash differs from lock file hash
         const localFiles = modifiedCache?.hash
-        const originalFiles = pkg.workflows[testWorkflowName]
+        const originalFiles = lockData.workflows[testWorkflowName].hash
 
         // 9. Manual verification of MODIFIED state (comparing hashes)
         expect(localFiles).not.toEqual(originalFiles)
@@ -134,23 +134,22 @@ describe("ProjectService Integration", () => {
       }
     })
 
-    it("should update package.json with current workflow hash", async () => {
+    it("should update lock file with current workflow hash", async () => {
       // 1. First, ensure the workflow exists and is cached
       const cacheResult = await projectService.cacheLocalWorkflow(testWorkflowName)
       expect(cacheResult).toBeDefined()
       const currentHash = cacheResult!.hash
 
-      // 2. Set this hash in package.json
+      // 2. Set this hash in lock file
       projectService.setWorkflowHash(testWorkflowName, currentHash)
-      projectService.updatePackageJson()
+      projectService.updateLockFile()
 
-      // 3. Read the package.json to verify
-      const pkgPath = path.join(process.cwd(), "package.json")
-      const pkgContent = await fs.promises.readFile(pkgPath, "utf-8")
-      const pkg = JSON.parse(pkgContent)
+      // 3. Read the lock file to verify
+      const lockData = readLockFile()
 
       // 4. Verify the hash was properly set
-      expect(pkg.workflows[testWorkflowName]).toBe(currentHash)
+      expect(lockData.workflows[testWorkflowName]).toBeDefined()
+      expect(lockData.workflows[testWorkflowName].hash).toBe(currentHash)
     })
 
     it("should identify changes in workflow files", async () => {

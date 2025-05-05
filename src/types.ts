@@ -18,10 +18,17 @@ export type WorkflowFile = {
   file: Buffer
 }
 
-/*
- * Package.json file
+/**
+ * Lock file data
  */
-export type PackageJson = {
-  [key: string]: unknown
-  workflows: Record<string, string>
+export type LockFileData = {
+  workflows: Record<string, WorkflowHash>
+}
+
+/**
+ * Workflow lock data
+ */
+export type WorkflowHash = {
+  hash: string
+  fileHashes: Record<string, string>
 }

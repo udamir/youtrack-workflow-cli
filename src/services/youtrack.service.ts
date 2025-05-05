@@ -1,4 +1,4 @@
-import { archiveWorkflow, extractFilesFromZip } from "../tools/zip.tools"
+import { zipWorkflowFiles, unzipWorkflowFiles } from "../tools/zip.tools"
 import type { WorkflowFile } from "../types"
 import { YouTrackApiError } from "../errors"
 
@@ -80,7 +80,7 @@ export class YoutrackService {
     const blob = await response.blob()
     // Convert blob to buffer
     const arrayBuffer = await blob.arrayBuffer()
-    return extractFilesFromZip(Buffer.from(arrayBuffer))
+    return unzipWorkflowFiles(Buffer.from(arrayBuffer))
   }
 
   /**
@@ -90,7 +90,7 @@ export class YoutrackService {
    * @throws {YouTrackApiError} If the workflow cannot be uploaded
    */
   public async uploadWorkflow(files: WorkflowFile[]): Promise<boolean> {
-    const zipBuffer = await archiveWorkflow(files)
+    const zipBuffer = await zipWorkflowFiles(files)
 
     const url = new URL("/api/admin/workflows", this.host)
     const params = {

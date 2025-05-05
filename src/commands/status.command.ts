@@ -1,6 +1,6 @@
 import ora from "ora"
 
-import { PROGRESS_STATUS, WORKFLOW_DESCRIPTION, WORKFLOW_STATUS } from "../consts"
+import { PROGRESS_STATUS, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../consts"
 import type { ProgressStatus, WorkflowStatus } from "../types"
 import { YoutrackService, ProjectService } from "../services"
 import { isError, printItemStatus } from "../utils"
@@ -24,7 +24,7 @@ export const statusCommand = async (
   const projectService = new ProjectService(youtrackService)
 
   // Get project workflows
-  const workflows = projectService.workflows.map(w => w.name)
+  const workflows = Object.keys(projectService.workflows)
 
   if (workflows.length === 0) {
     console.log("No workflows in project")
@@ -60,13 +60,14 @@ export const statusCommand = async (
     }).start()
     
     try {
+      // Get workflow status
       const status = await projectService.workflowStatus(workflow)
       statusCounts[status]++
-
+      
       // Stop spinner to print status line
       spinner.stop()
 
-      printItemStatus(workflow, progressStatus(status), WORKFLOW_DESCRIPTION[status])
+      printItemStatus(workflow, progressStatus(status), WORKFLOW_STATUS_DATA[status].description)
       
     } catch (err) {
       // Failed to check workflow status
@@ -80,7 +81,7 @@ export const statusCommand = async (
 
   // Print summary
   console.log(`\nChecked workflow status: ${completedCount}/${workflows.length}`)
-  
+      
   // Display statistics summary
   const summaryParts = []
   if (statusCounts[WORKFLOW_STATUS.SYNCED] > 0) 
@@ -98,7 +99,7 @@ export const statusCommand = async (
     
   const summary = summaryParts.join(", ")
   console.log(`Summary: ${workflows.length} total workflows (${summary})`)
-
+        
   // Display overall status message
   if (statusCounts[WORKFLOW_STATUS.SYNCED] === workflows.length) {
     console.log("All workflows are in sync.")

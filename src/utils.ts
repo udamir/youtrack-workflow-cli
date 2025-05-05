@@ -1,4 +1,4 @@
-import { COLORS, PROGRESS_STATUS_COLOR, PROGRESS_STATUS_ICON } from "./consts"
+import { COLORS, PROGRESS_STATUS_DATA } from "./consts"
 import type { ProgressStatus } from "./types"
 
 /**
@@ -34,5 +34,6 @@ export const isError = (condition: unknown, message: string): boolean => {
  * @param message Message to display
  */
 export const printItemStatus = (item: string, status: ProgressStatus, message: string) => {
-  console.log(`   ${colorize(PROGRESS_STATUS_ICON[status], PROGRESS_STATUS_COLOR[status])} ${item}: ${colorize(message, PROGRESS_STATUS_COLOR[status])}`)
+  const { icon, color } = PROGRESS_STATUS_DATA[status]
+  console.log(`   ${colorize(icon, color)} ${item}: ${colorize(message, color)}`)
 }

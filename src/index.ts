@@ -63,9 +63,8 @@ program
   .argument("[workflow...]", "Workflow name")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .option("--delete-files", "Delete workflow files from disk", false)
-  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, deleteFiles = false }) =>
-    removeCommand(workflow, { host, token, deleteFiles }),
+  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
+    removeCommand(workflow, { host, token }),
   )
 
 program

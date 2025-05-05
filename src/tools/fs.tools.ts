@@ -1,15 +1,32 @@
-import * as path from "node:path"
 import * as fs from "node:fs"
+import * as path from "node:path"
 
-import type { PackageJson, WorkflowFile } from "../types"
-import { filesHash } from "./hash.tools"
+import type { LockFileData, WorkflowFile, WorkflowHash } from "../types"
+import { calculateWorkflowHash } from "./hash.tools"
+import { LOCK_FILE_NAME } from "../consts"
+
+/**
+ * Check if a workflow is local
+ * @param workflowName Workflow name
+ * @returns True if the workflow is local, false otherwise
+ */
+export const isLocalWorkflow = (workflowName: string): boolean => {
+  const manifestPath = path.join(process.cwd(), workflowName, "manifest.json")
+  if (!fs.existsSync(manifestPath)) {
+    return false
+  }
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
+  return manifest.name === workflowName
+}
 
 /**
  * Read workflow files from a directory
- * @param sourcePath Source directory path
+ * @param workflowName Workflow name
  * @returns Array of filename and file content buffer pairs
  */
-export const readWorkflowFiles = async (sourcePath: string): Promise<WorkflowFile[]> => {
+export const readLocalWorkflowFiles = async (workflowName: string): Promise<WorkflowFile[]> => {
+  const sourcePath = path.join(process.cwd(), workflowName)
+
   if (!fs.existsSync(sourcePath)) {
     throw new Error(`Source path does not exist: ${sourcePath}`)
   }
@@ -37,11 +54,24 @@ export const readWorkflowFiles = async (sourcePath: string): Promise<WorkflowFil
 }
 
 /**
+ * Delete workflow files from a directory
+ * @param workflowName Workflow name
+ */
+export const deleteLocalWorkflowFiles = async (workflowName: string): Promise<void> => {
+  const targetPath = path.join(process.cwd(), workflowName)
+
+  // Delete the directory and its contents
+  await fs.promises.rm(targetPath, { recursive: true, force: true })
+}
+
+/**
  * Write workflow files to a directory
  * @param files Array of filename and file content buffer pairs
- * @param targetPath Target directory path
+ * @param workflowName Workflow name
  */
-export const writeWorkflowFiles = async (files: WorkflowFile[], targetPath: string): Promise<void> => {
+export const writeLocalWorkflowFiles = async (files: WorkflowFile[], workflowName: string): Promise<void> => {
+  const targetPath = path.join(process.cwd(), workflowName)
+
   // Create target directory if it doesn't exist
   await fs.promises.mkdir(targetPath, { recursive: true })
 
@@ -58,32 +88,55 @@ export const writeWorkflowFiles = async (files: WorkflowFile[], targetPath: stri
 /**
  * Calculate a hash for a workflow folder using the same content-based approach as workflowHash
  * This creates a more reliable hash by ignoring file metadata
- * @param folderPath Path to the workflow folder
+ * @param workflowName Workflow name
  * @returns Hash string representing only the combined content of files
  */
-export const workflowFolderHash = async (folderPath: string): Promise<string> => {
+export const localWorkflowFolderHash = async (workflowName: string): Promise<WorkflowHash> => {
   // Read files in the root folder only (no recursion)
-  const files = await readWorkflowFiles(folderPath)
+  const files = await readLocalWorkflowFiles(workflowName)
 
   // Calculate files hash
-  return filesHash(files)
+  return calculateWorkflowHash(files)
 }
 
 /**
- * Read package.json file
- * @param path Path to the package.json file
- * @returns Package.json content as a Record
+ * Get the path to the lock file
+ * @returns Path to the lock file
  */
-export const readPackageJson = (path: string): PackageJson => {
-  const data = fs.readFileSync(path, "utf-8")
-  return JSON.parse(data)
+export const getLockFilePath = (): string => {
+  return path.join(process.cwd(), LOCK_FILE_NAME)
 }
 
 /**
- * Write package.json file
- * @param path Path to the package.json file
- * @param data Package.json content as a Record
+ * Read lock file
+ * @returns Lock file data or empty data if file doesn't exist
  */
-export const writePackageJson = (path: string, data: PackageJson): void => {
-  fs.writeFileSync(path, JSON.stringify(data, null, 2))
+export const readLockFile = (): LockFileData => {
+  const lockFilePath = getLockFilePath()
+
+  try {
+    const data = fs.readFileSync(lockFilePath, "utf-8")
+    return JSON.parse(data) as LockFileData
+  } catch (error) {
+    // If file doesn't exist or can't be parsed, return empty data
+    return {
+      workflows: {},
+    }
+  }
+}
+
+/**
+ * Write lock file data to disk
+ * @param data Lock file data
+ */
+export const writeLockFile = (data: LockFileData): void => {
+  const lockFilePath = getLockFilePath()
+
+  try {
+    // Ensure the lock file is formatted consistently
+    const formattedData = JSON.stringify(data, null, 2)
+    fs.writeFileSync(lockFilePath, formattedData, "utf-8")
+  } catch (error) {
+    throw new Error(`Failed to write lock file: ${(error as Error).message}`)
+  }
 }
