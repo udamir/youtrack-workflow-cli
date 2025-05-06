@@ -22,18 +22,11 @@ npm install --save-dev youtrack-workflow-cli
 
 ### Using npx
 
-If you don't want to install the package globally or as a dependency, you can use `npx` to run the commands directly:
+After installation you can use `npx` to run the commands directly:
 
 ```
-npx youtrack-workflow-cli <command>
-# or the shorter alias
 npx ytw <command>
 ```
-
-This approach allows you to:
-- Use the latest version without installing it permanently
-- Avoid global installation conflicts
-- Run the tool in CI/CD pipelines without installation steps
 
 ## Utility Commands
 
