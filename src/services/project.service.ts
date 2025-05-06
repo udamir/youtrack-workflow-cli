@@ -148,7 +148,15 @@ export class ProjectService {
     const workflow = this._workflows[name]
     const serverCache = await this.cacheYoutrackWorkflow(name)
     const localCache = await this.cacheLocalWorkflow(name)
-
+    
+    if (!workflow || (localCache?.hash === serverCache?.hash && localCache?.hash !== workflow.hash)) {
+      this._workflows[name] = {
+        hash: localCache?.hash || serverCache?.hash || '',
+        fileHashes: localCache?.fileHashes || serverCache?.fileHashes || {}
+      }
+      this.updateLockFile()
+    }
+    
     switch (true) {
       case workflow === undefined:
         return WORKFLOW_STATUS.UNKNOWN

@@ -149,3 +149,12 @@ export const writeLockFile = (data: LockFileData): void => {
     throw new Error(`Failed to write lock file: ${(error as Error).message}`)
   }
 }
+
+/**
+ * Check if a workflow manifest exists
+ * @param workflowName Workflow name
+ * @returns True if the manifest exists, false otherwise
+ */
+export const isManifestExists = (workflowName: string): boolean => {
+  return fs.existsSync(path.join(getWorkflowPath(workflowName), "manifest.json"))
+}

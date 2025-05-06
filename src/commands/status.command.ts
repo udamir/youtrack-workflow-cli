@@ -4,6 +4,7 @@ import { PROGRESS_STATUS, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../const
 import type { ProgressStatus, WorkflowStatus } from "../types"
 import { YoutrackService, ProjectService } from "../services"
 import { isError, printItemStatus } from "../utils"
+import { isManifestExists } from "../tools/fs.tools"
 
 /**
  * Command to check the status of workflows in a project
@@ -24,10 +25,12 @@ export const statusCommand = async (
   const projectService = new ProjectService(youtrackService)
 
   // Get project workflows
-  const workflows = Object.keys(projectService.workflows)
+  const serverWorkflows = await youtrackService.fetchWorkflows()
+
+  const workflows = serverWorkflows.filter(isManifestExists)
 
   if (workflows.length === 0) {
-    console.log("No workflows in project")
+    console.log("No workflows found")
     return
   }
 
@@ -64,10 +67,17 @@ export const statusCommand = async (
       const status = await projectService.workflowStatus(workflow)
       statusCounts[status]++
       
+      const fileStatus = status === WORKFLOW_STATUS.CONFLICT ? await projectService.getWorkflowFileStatus(workflow) : {}
+
       // Stop spinner to print status line
       spinner.stop()
 
       printItemStatus(workflow, progressStatus(status), WORKFLOW_STATUS_DATA[status].description)
+      Object.entries(fileStatus).forEach(([file, status]) => {
+        if (status !== WORKFLOW_STATUS.SYNCED) {
+          printItemStatus(file, progressStatus(status), WORKFLOW_STATUS_DATA[status].description, 5)
+        }
+      })
       
     } catch (err) {
       // Failed to check workflow status
