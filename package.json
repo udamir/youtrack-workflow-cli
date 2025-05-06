@@ -12,7 +12,7 @@
   },
   "author": "Damir Yusipov",
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
   "preferGlobal": true,
   "scripts": {
     "build": "tsc",

@@ -1,8 +1,8 @@
 import JSZip from "jszip"
-import { workflowHash, extractFilesFromZip, archiveWorkflow } from "../../src/tools/zip.tools"
+import { calculateWorkflowZipHash, unzipWorkflowFiles, zipWorkflowFiles } from "../../src/tools/zip.tools"
 
 describe("zip.tools", () => {
-  describe("workflowHash", () => {
+  describe("calculateWorkflowZipHash", () => {
     it("should generate different hashes for different zip structures with same content", async () => {
       // Create two test zip files with the same content but different file names
       const zip1 = new JSZip()
@@ -21,8 +21,8 @@ describe("zip.tools", () => {
       const buffer2 = await zip2.generateAsync({ type: "nodebuffer" })
 
       // With current implementation, filenames are considered in the hash
-      const contentHash1 = await workflowHash(Buffer.from(buffer1))
-      const contentHash2 = await workflowHash(Buffer.from(buffer2))
+      const contentHash1 = await calculateWorkflowZipHash(Buffer.from(buffer1))
+      const contentHash2 = await calculateWorkflowZipHash(Buffer.from(buffer2))
       expect(contentHash1).not.toEqual(contentHash2)
     })
 
@@ -43,9 +43,9 @@ describe("zip.tools", () => {
       const buffer1 = await zip1.generateAsync({ type: "nodebuffer" })
       const buffer2 = await zip2.generateAsync({ type: "nodebuffer" })
 
-      // Verify that workflowHash correctly detects different content
-      const contentHash1 = await workflowHash(Buffer.from(buffer1))
-      const contentHash2 = await workflowHash(Buffer.from(buffer2))
+      // Verify that calculateWorkflowZipHash correctly detects different content
+      const contentHash1 = await calculateWorkflowZipHash(Buffer.from(buffer1))
+      const contentHash2 = await calculateWorkflowZipHash(Buffer.from(buffer2))
       expect(contentHash1).not.toEqual(contentHash2)
     })
 
@@ -85,13 +85,13 @@ describe("zip.tools", () => {
 
       // WorkflowHash should produce identical hashes since the content is the same
       // Metadata differences are still ignored
-      const contentHash1 = await workflowHash(Buffer.from(buffer1))
-      const contentHash2 = await workflowHash(Buffer.from(buffer2))
+      const contentHash1 = await calculateWorkflowZipHash(Buffer.from(buffer1))
+      const contentHash2 = await calculateWorkflowZipHash(Buffer.from(buffer2))
       expect(contentHash1).toEqual(contentHash2)
     })
   })
 
-  describe("extractFilesFromZip", () => {
+  describe("unzipWorkflowFiles", () => {
     it("should extract files from zip with correct names and file buffers", async () => {
       // Create a test zip with multiple files (only in root level)
       const zip = new JSZip()
@@ -103,7 +103,7 @@ describe("zip.tools", () => {
       const buffer = await zip.generateAsync({ type: "nodebuffer" })
 
       // Extract files
-      const files = await extractFilesFromZip(buffer)
+      const files = await unzipWorkflowFiles(buffer)
 
       // Should extract exactly the files we added
       expect(files.length).toBe(3)
@@ -121,7 +121,7 @@ describe("zip.tools", () => {
     })
   })
 
-  describe("archiveWorkflow", () => {
+  describe("zipWorkflowFiles", () => {
     it("should create a zip archive from workflow files", async () => {
       // Create test workflow files
       const files = [
@@ -130,14 +130,14 @@ describe("zip.tools", () => {
       ]
 
       // Archive the files
-      const zipBuffer = await archiveWorkflow(files)
+      const zipBuffer = await zipWorkflowFiles(files)
 
       // Verify it's a valid zip buffer
       expect(Buffer.isBuffer(zipBuffer)).toBe(true)
       expect(zipBuffer.length).toBeGreaterThan(0)
 
       // Extract the files again to verify content is preserved
-      const extractedFiles = await extractFilesFromZip(zipBuffer)
+      const extractedFiles = await unzipWorkflowFiles(zipBuffer)
 
       // Should have the same number of files
       expect(extractedFiles.length).toBe(files.length)

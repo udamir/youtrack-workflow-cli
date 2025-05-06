@@ -6,6 +6,23 @@ import { calculateWorkflowHash } from "./hash.tools"
 import { LOCK_FILE_NAME } from "../consts"
 
 /**
+ * Get the path to the workflow directory
+ * @param workflowName Workflow name
+ * @returns Path to the workflow directory
+ */
+export const getWorkflowPath = (workflowName: string): string => {
+  return path.join(process.cwd(), workflowName)
+}
+
+/**
+ * Get the path to the lock file
+ * @returns Path to the lock file
+ */
+export const getLockFilePath = (): string => {
+  return path.join(process.cwd(), LOCK_FILE_NAME)
+}
+
+/**
  * Check if a workflow is local
  * @param workflowName Workflow name
  * @returns True if the workflow is local, false otherwise
@@ -25,7 +42,7 @@ export const isLocalWorkflow = (workflowName: string): boolean => {
  * @returns Array of filename and file content buffer pairs
  */
 export const readLocalWorkflowFiles = async (workflowName: string): Promise<WorkflowFile[]> => {
-  const sourcePath = path.join(process.cwd(), workflowName)
+  const sourcePath = getWorkflowPath(workflowName)
 
   if (!fs.existsSync(sourcePath)) {
     throw new Error(`Source path does not exist: ${sourcePath}`)
@@ -58,7 +75,7 @@ export const readLocalWorkflowFiles = async (workflowName: string): Promise<Work
  * @param workflowName Workflow name
  */
 export const deleteLocalWorkflowFiles = async (workflowName: string): Promise<void> => {
-  const targetPath = path.join(process.cwd(), workflowName)
+  const targetPath = getWorkflowPath(workflowName)
 
   // Delete the directory and its contents
   await fs.promises.rm(targetPath, { recursive: true, force: true })
@@ -70,7 +87,7 @@ export const deleteLocalWorkflowFiles = async (workflowName: string): Promise<vo
  * @param workflowName Workflow name
  */
 export const writeLocalWorkflowFiles = async (files: WorkflowFile[], workflowName: string): Promise<void> => {
-  const targetPath = path.join(process.cwd(), workflowName)
+  const targetPath = getWorkflowPath(workflowName)
 
   // Create target directory if it doesn't exist
   await fs.promises.mkdir(targetPath, { recursive: true })
@@ -97,14 +114,6 @@ export const localWorkflowFolderHash = async (workflowName: string): Promise<Wor
 
   // Calculate files hash
   return calculateWorkflowHash(files)
-}
-
-/**
- * Get the path to the lock file
- * @returns Path to the lock file
- */
-export const getLockFilePath = (): string => {
-  return path.join(process.cwd(), LOCK_FILE_NAME)
 }
 
 /**

@@ -4,7 +4,7 @@ import * as crypto from "node:crypto"
 
 import { YoutrackService } from "../../src/services/youtrack.service"
 import { ProjectService } from "../../src/services/project.service"
-import { readLockFile } from "../../src/tools/lock.tools"
+import { readLockFile } from "../../src/tools/fs.tools"
 import { TestHelper } from "./test-helpers"
 
 describe("ProjectService Integration", () => {
@@ -43,8 +43,11 @@ describe("ProjectService Integration", () => {
       // Arrange
       const testHash = "test-hash-value"
 
-      // Act
-      projectService.setWorkflowHash(testWorkflowName, testHash)
+      // Act - directly set the workflow hash in the workflows object
+      projectService.workflows[testWorkflowName] = {
+        hash: testHash,
+        fileHashes: {}
+      }
       projectService.updateLockFile()
 
       // Assert
@@ -92,7 +95,10 @@ describe("ProjectService Integration", () => {
       const initialHash = initialCache!.hash
 
       // 2. Set the original hash in lock file
-      projectService.setWorkflowHash(testWorkflowName, initialHash)
+      projectService.workflows[testWorkflowName] = {
+        hash: initialHash,
+        fileHashes: {}
+      }
       projectService.updateLockFile()
 
       // 3. Verify that the current status shows files match original
@@ -141,7 +147,10 @@ describe("ProjectService Integration", () => {
       const currentHash = cacheResult!.hash
 
       // 2. Set this hash in lock file
-      projectService.setWorkflowHash(testWorkflowName, currentHash)
+      projectService.workflows[testWorkflowName] = {
+        hash: currentHash,
+        fileHashes: {}
+      }
       projectService.updateLockFile()
 
       // 3. Read the lock file to verify
