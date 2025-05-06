@@ -1,6 +1,6 @@
 {
   "name": "youtrack-workflow-cli",
-  "version": "0.0.5",
+  "version": "0.1.2",
   "description": "Youtrack workflow CLI",
   "repository": {
     "type": "git",
@@ -12,7 +12,6 @@
   },
   "author": "Damir Yusipov",
   "license": "MIT",
-  "type": "module",
   "preferGlobal": true,
   "scripts": {
     "build": "tsc",
@@ -39,7 +38,7 @@
     "dotenv": "^16.5.0",
     "inquirer": "^12.6.0",
     "jszip": "^3.10.1",
-    "ora": "^8.2.0"
+    "ora": "5.4.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
