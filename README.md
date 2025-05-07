@@ -56,26 +56,26 @@ Options:
 ### Pull
 
 ```
-npx ytw pull [workflow-name...]
+npx ytw pull [workflow-name...] [--force]
 ```
 
 Downloads the specified workflows from your YouTrack installation to your local project.
 
 Options:
-- If no workflow name is provided, it will pull all workflows defined in your project.
-- Use `@` to select workflows interactively from the YouTrack server.
+- `--force` - pull existing workflows without checking status and confirmation
+- If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
 
 ### Push
 
 ```
-npx ytw push [workflow-name...]
+npx ytw push [workflow-name...] [--force]
 ```
 
 Uploads the workflows from your local project to your YouTrack installation.
 
 Options:
-- If no workflow name is provided, it will push all workflows defined in your project.
-- Use `@` to select workflows interactively from those in your project.
+- `--force` - push existing workflows without checking status and confirmation
+- If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
 
 ### Remove
 
