@@ -47,7 +47,7 @@ Lists all the workflows that are available in your YouTrack installation.
 npx ytw add [workflow-name...]
 ```
 
-Adds one or more workflows to your project. If no workflow names are specified, you'll be prompted to select from available workflows in YouTrack. The workflow information is stored in your project's package.json file.
+Adds one or more workflows to your project. If no workflow names are specified, you'll be prompted to select from available workflows in YouTrack. The workflow information is stored in `ytw.lock` file.
 
 Options:
 - If no workflow name is provided, it will prompt you to select from available workflows in YouTrack.
@@ -100,8 +100,6 @@ Checks the status of all workflows in your project and compares them with the ve
 - Which are outdated (the YouTrack version is newer)
 - Any conflicts between local and YouTrack versions
 
-It also provides an interactive prompt to pull outdated workflows or push modified workflows as needed.
-
 ### Status Symbols
 
 The status command uses the following symbols to indicate workflow status:
@@ -112,7 +110,6 @@ The status command uses the following symbols to indicate workflow status:
 | ↑      | Modified | Local files have changes not in YouTrack       |
 | ↓      | Outdated | YouTrack version is ahead of local files       |
 | !      | Conflict | Both local and YouTrack versions have changes  |
-| ?      | Missing  | Workflow exists in project but no local files  |
 | +      | New      | Local files exist but workflow not in YouTrack |
 
 ### Common Parameters
