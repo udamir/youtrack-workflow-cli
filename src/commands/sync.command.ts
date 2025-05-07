@@ -44,38 +44,34 @@ export const syncCommand = async (
   let workflowsToProcess = []
 
   // If no workflows specified, get all available workflows
-  if (workflows.length === 0) {
-    workflowsToProcess = await youtrackService.fetchWorkflows()
-  } else if (workflows.length === 1 && workflows[0] === "@") {
-    // Case: @ - prompt user to select workflows
-    
-    // Check statuses of workflows for better selection
-    const statuses: Record<string, string> = {}
-    
+  if (workflows.length === 0 && !force) {
+    const projectWorkflows = await projectService.projectWorkflows()
+
+    // Create a spinner for checking statuses
     const statusSpinner = ora({
-      text: "Checking workflows status...",
+      text: "Checking workflow statuses ...",
       color: "blue",
     }).start()
 
-    for (const workflow of Object.keys(projectService.workflows)) {
-      try {
-        const status = await projectService.workflowStatus(workflow)
-        statuses[workflow] = status
-      } catch (error) {
-        statuses[workflow] = WORKFLOW_STATUS.UNKNOWN
-      }
-    }
-    
+    // Check statuses of workflows for better selection
+    const statuses = await projectService.checkWorkflowStatuses(projectWorkflows)
+
     statusSpinner.stop()
-    
+
     // Create choices based on statuses
-    const choices = Object.entries(statuses).map(([workflow, status]) => {
-      return {
+    const choices = Object.entries(statuses)
+      .filter(([_, status]) => status !== WORKFLOW_STATUS.SYNCED)
+      .map(([workflow, status]) => ({
         name: `${workflow} (${status})`,
         value: workflow,
-      }
-    })
+      }))
 
+    if (!choices.length) {
+      console.log("All workflows are up to date. No workflows to sync with YouTrack")
+      return
+    }
+
+    // Show prompt for user to select workflows
     const selected = await inquirer.prompt([
       {
         type: "checkbox",
@@ -90,9 +86,12 @@ export const syncCommand = async (
       return
     }
 
-    workflowsToProcess.push(...selected.workflows)
-  } else {
+    workflowsToProcess = selected.workflows
+  } else if (workflows.length > 0) {
     workflowsToProcess.push(...workflows)
+  } else {
+    // No workflows provided and force is not set - process all workflows
+    workflowsToProcess = await projectService.projectWorkflows()
   }
 
   // Process workflows

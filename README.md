@@ -100,6 +100,22 @@ Checks the status of all workflows in your project and compares them with the ve
 - Which are outdated (the YouTrack version is newer)
 - Any conflicts between local and YouTrack versions
 
+### Sync
+
+```
+ytw sync [workflow-name...] [--force [strategy]] [--watch [strategy]]
+```
+
+Synchronizes workflows between your local project and YouTrack. This command:
+- Checks the status of all workflows in your project
+- Prompts you to select workflows that need to be synchronized
+- Allows you to resolve conflicts between local and YouTrack versions
+
+Options:
+- `--force [strategy]` - synchronize workflows without checking status and confirmation
+- `--watch [strategy]` - watch for file changes with specified strategy (auto, pull, push)
+- If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
+
 ### Status Symbols
 
 The status command uses the following symbols to indicate workflow status:

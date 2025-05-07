@@ -24,7 +24,7 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
   if (workflows.length === 0) {
     try {
       // Get project workflows from the workflows property
-      const projectWorkflows = Object.keys(projectService.workflows)
+      const projectWorkflows = await projectService.projectWorkflows()
 
       if (projectWorkflows.length === 0) {
         console.log("No workflows in project")

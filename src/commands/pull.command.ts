@@ -24,42 +24,30 @@ export const pullCommand = async (
   const projectService = new ProjectService(youtrackService)
 
   let workflowsToProcess: string[] = []
-  const availableWorkflows = Object.keys(projectService.workflows)
+  const projectWorkflows = await projectService.projectWorkflows()
 
-  if (!availableWorkflows.length) {
+  if (!projectWorkflows.length) {
     console.error("No workflows in project. Add workflows first.")
     return
   }
 
   if (!workflows.length && !force) {
-    // Check statuses of workflows for better selection
-    const statuses: Record<string, string> = {}
-    let completedCount = 0
-
     // Create a spinner for checking statuses
     const statusSpinner = ora({
-      text: `Checking workflow statuses (0/${availableWorkflows.length})`,
+      text: "Checking workflow statuses ...",
       color: "blue",
     }).start()
 
-    for (const workflow of availableWorkflows) {
-      try {
-        statuses[workflow] = await projectService.workflowStatus(workflow)
-      } catch (error) {
-        statuses[workflow] = WORKFLOW_STATUS.UNKNOWN
-      }
-
-      completedCount++
-      statusSpinner.text = `Checking workflow statuses (${completedCount}/${availableWorkflows.length})`
-    }
+    // Check statuses of workflows for better selection
+    const statuses = await projectService.checkWorkflowStatuses(projectWorkflows)
 
     statusSpinner.stop()
 
     // Create choices based on statuses
-    const choices = availableWorkflows
-      .filter((workflow) => statuses[workflow] !== WORKFLOW_STATUS.SYNCED)
-      .map((workflow) => ({
-        name: `${workflow} (${statuses[workflow]})`,
+    const choices = Object.entries(statuses)
+      .filter(([_, status]) => status !== WORKFLOW_STATUS.SYNCED)
+      .map(([workflow, status]) => ({
+        name: `${workflow} (${status})`,
         value: workflow,
       }))
 
@@ -89,7 +77,7 @@ export const pullCommand = async (
     workflowsToProcess = workflows
   } else {
     // Case: No arguments and force - pull all project workflows
-    workflowsToProcess = Object.keys(projectService.workflows)
+    workflowsToProcess = projectWorkflows
   }
 
   // Process workflows and track progress

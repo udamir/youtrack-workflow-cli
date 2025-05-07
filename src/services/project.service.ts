@@ -1,4 +1,4 @@
-import { readLocalWorkflowFiles, writeLocalWorkflowFiles, readLockFile, writeLockFile, isLocalWorkflow, deleteLocalWorkflowFiles } from "../tools/fs.tools"
+import { readLocalWorkflowFiles, writeLocalWorkflowFiles, readLockFile, writeLockFile, isLocalWorkflow, deleteLocalWorkflowFiles, isManifestExists } from "../tools/fs.tools"
 import { WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
 import type { WorkflowFile, WorkflowStatus, WorkflowHash } from "../types"
 import { calculateWorkflowHash } from "../tools/hash.tools"
@@ -29,10 +29,6 @@ export class ProjectService {
     this._workflows = data?.workflows || {}
   }
 
-  get workflows() {
-    return this._workflows
-  }
-
   /**
    * Save workflows to lock file
    * @param workflows Workflows to save
@@ -43,6 +39,15 @@ export class ProjectService {
     pkg.workflows = workflows || this._workflows
 
     writeLockFile(pkg)
+  }
+
+  /**
+   * Get a list of workflows in the project
+   * @returns Array of workflow names
+   */
+  public async projectWorkflows(): Promise<string[]> {
+    const serverWorkflows = await this.youtrack.fetchWorkflows()
+    return serverWorkflows.filter(isManifestExists)
   }
 
   /**
@@ -184,17 +189,20 @@ export class ProjectService {
    */
   public async getWorkflowFileStatus(name: string): Promise<Record<string, WorkflowStatus>> {
     const workflowLockData = this._workflows[name]
-    if (!workflowLockData) {
-      // If no lock data, we can't determine file-level status
-      return {}
-    }
-
     // Get server and local caches
     const serverCache = await this.cacheYoutrackWorkflow(name)
     const localCache = await this.cacheLocalWorkflow(name)
 
     if (!localCache && !serverCache) {
       return {}
+    }
+
+    if (!workflowLockData || (localCache?.hash === serverCache?.hash && localCache?.hash !== workflowLockData.hash)) {
+      this._workflows[name] = {
+        hash: localCache?.hash || serverCache?.hash || '',
+        fileHashes: localCache?.fileHashes || serverCache?.fileHashes || {}
+      }
+      this.updateLockFile()
     }
 
     const results: Record<string, WorkflowStatus> = {}
@@ -239,6 +247,25 @@ export class ProjectService {
     }
 
     return results
+  }
+
+  /**
+   * Check the status of all workflows in the project
+   * @returns Record of workflow name to status mapping
+   */
+  public async checkWorkflowStatuses(workflows?: string[]): Promise<Record<string, WorkflowStatus>> {
+    const statuses: Record<string, WorkflowStatus> = {}
+    const _workflows = workflows || await this.projectWorkflows()
+
+    for (const workflow of _workflows) {
+      try {
+        statuses[workflow] = await this.workflowStatus(workflow)
+      } catch (error) {
+        statuses[workflow] = WORKFLOW_STATUS.UNKNOWN
+      }
+    }
+
+    return statuses
   }
 
   /**
@@ -353,9 +380,9 @@ export class ProjectService {
    * Get a list of available workflows in YouTrack
    * @returns Array of workflow names
    */
-  public async availableWorkflows(): Promise<string[]> {
-    const workflows = await this.youtrack.fetchWorkflows()
-    return workflows.filter((w) => !this._workflows[w])
+  public async notAddedWorkflows(): Promise<string[]> {
+    const serverWorkflows = await this.youtrack.fetchWorkflows()
+    return serverWorkflows.filter((w) => !isManifestExists(w))
   }
 
   /**

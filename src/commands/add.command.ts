@@ -24,7 +24,7 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
   if (workflows.length === 0) {
     try {
       // Get all available workflows from YouTrack
-      const availableWorkflows = await projectService.availableWorkflows()
+      const notAddedWorkflows = await projectService.notAddedWorkflows()
 
       // Show prompt to select workflows
       const selected = await inquirer.prompt([
@@ -32,7 +32,7 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
           type: "checkbox",
           name: "workflows",
           message: "Select workflows to add:",
-          choices: availableWorkflows,
+          choices: notAddedWorkflows,
         },
       ])
 
