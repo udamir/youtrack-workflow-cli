@@ -1,4 +1,4 @@
-import type { PROGRESS_STATUS, WORKFLOW_STATUS } from "./consts"
+import type { PROGRESS_STATUS, WORKFLOW_STATUS, SYNC_STRATEGY_AUTO, SYNC_STRATEGY_PULL, SYNC_STRATEGY_PUSH, SYNC_STRATEGY_SKIP } from "./consts"
 
 /**
  * Workflow status
@@ -32,3 +32,5 @@ export type WorkflowHash = {
   hash: string
   fileHashes: Record<string, string>
 }
+
+export type SyncStrategy = typeof SYNC_STRATEGY_AUTO | typeof SYNC_STRATEGY_PULL | typeof SYNC_STRATEGY_PUSH | typeof SYNC_STRATEGY_SKIP

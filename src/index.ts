@@ -7,6 +7,8 @@ import { listCommand } from "./commands/list.command"
 import { pullCommand } from "./commands/pull.command"
 import { pushCommand } from "./commands/push.command"
 import { addCommand } from "./commands/add.command"
+import { syncCommand } from "./commands/sync.command"
+import { SYNC_STRATEGY_SKIP } from "./consts"
 
 dotenv.config()
 
@@ -25,7 +27,9 @@ program
   .description("List available workflows")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action(({ host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => listCommand({ host, token }))
+  .action(({ host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => 
+    listCommand({ host, token })
+  )
 
 program
   .command("pull")
@@ -33,18 +37,31 @@ program
   .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
+  .action((workflow, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
     pullCommand(workflow, { host, token }),
   )
 
 program
   .command("push")
-  .description("Upload workflow to youtrack")
+  .description("Push local workflow changes to YouTrack")
   .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
-    pushCommand(workflow, { host, token }),
+  .action((workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => 
+    pushCommand(workflows, { host, token })
+  )
+
+program
+  .command("sync")
+  .description("Synchronize workflows between local and YouTrack")
+  .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
+  .option("--host [host]", "YouTrack host")
+  .option("--token [token]", "YouTrack token")
+  .option("--watch [strategy]", "Watch for file changes with specified strategy (auto, pull, push)", SYNC_STRATEGY_SKIP)
+  .option("--force [strategy]", "Force conflict resolution without prompting with specified strategy (auto, pull, push)", "auto")
+  .option("--debounce [ms]", "Debounce time in milliseconds for file watching", Number.parseInt, 1000)
+  .action((workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, watch, force, debounce }) => 
+    syncCommand(workflows, { host, token, watch, force, debounce })
   )
 
 program
@@ -53,7 +70,7 @@ program
   .argument("[workflow...]", "Workflow name")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
+  .action((workflow, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
     addCommand(workflow, { host, token }),
   )
 
@@ -63,7 +80,7 @@ program
   .argument("[workflow...]", "Workflow name")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
+  .action((workflow, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
     removeCommand(workflow, { host, token }),
   )
 
@@ -72,6 +89,8 @@ program
   .description("Check workflow status")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action(({ host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => statusCommand({ host, token }))
+  .action(({ host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => 
+    statusCommand({ host, token })
+  )
 
 program.parse(process.argv)

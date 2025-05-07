@@ -77,7 +77,8 @@ export const WORKFLOW_STATUS_DATA = {
 export const PROGRESS_STATUS = {
   SUCCESS: "success",
   WARNING: "warning",
-  FAILED: "failed"
+  FAILED: "failed",
+  INFO: "info"
 } as const
 
 export const PROGRESS_STATUS_DATA = {
@@ -93,4 +94,13 @@ export const PROGRESS_STATUS_DATA = {
     icon: '✗',
     color: COLORS.FG.RED,
   },
+  [PROGRESS_STATUS.INFO]: {
+    icon: "ℹ",
+    color: COLORS.FG.BLUE
+  },
 } as const
+
+export const SYNC_STRATEGY_AUTO = "auto"
+export const SYNC_STRATEGY_PULL = "pull"
+export const SYNC_STRATEGY_PUSH = "push"
+export const SYNC_STRATEGY_SKIP = "skip"
