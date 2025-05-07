@@ -88,7 +88,7 @@ export class ProjectService {
     }
     const { files, ...rest } = localCache
 
-    await this.youtrack.uploadWorkflow(files)
+    await this.youtrack.uploadWorkflow(name, files)
 
     this._workflows[name] = rest
     this.updateLockFile()

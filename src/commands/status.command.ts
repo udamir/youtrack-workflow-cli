@@ -58,7 +58,8 @@ export const statusCommand = async (
   for (const workflow of workflows) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `Checking workflow status (${completedCount}/${workflows.length})`,
+      text: `${workflow}: ...\nChecking workflow status (${completedCount}/${workflows.length})`,
+      prefixText: "  ",
       color: 'blue',
     }).start()
     
@@ -88,41 +89,27 @@ export const statusCommand = async (
     
     completedCount++
   }
-
-  // Print summary
-  console.log(`\nChecked workflow status: ${completedCount}/${workflows.length}`)
-      
-  // Display statistics summary
-  const summaryParts = []
-  if (statusCounts[WORKFLOW_STATUS.SYNCED] > 0) 
-    summaryParts.push(`${statusCounts[WORKFLOW_STATUS.SYNCED]} synced`)
-  if (statusCounts[WORKFLOW_STATUS.MODIFIED] > 0) 
-    summaryParts.push(`${statusCounts[WORKFLOW_STATUS.MODIFIED]} modified`)
-  if (statusCounts[WORKFLOW_STATUS.OUTDATED] > 0) 
-    summaryParts.push(`${statusCounts[WORKFLOW_STATUS.OUTDATED]} outdated`)
-  if (statusCounts[WORKFLOW_STATUS.CONFLICT] > 0) 
-    summaryParts.push(`${statusCounts[WORKFLOW_STATUS.CONFLICT]} conflicts`)
-  if (statusCounts[WORKFLOW_STATUS.MISSING] > 0) 
-    summaryParts.push(`${statusCounts[WORKFLOW_STATUS.MISSING]} missing`)
-  if (statusCounts[WORKFLOW_STATUS.NEW] > 0) 
-    summaryParts.push(`${statusCounts[WORKFLOW_STATUS.NEW]} new`)
-    
-  const summary = summaryParts.join(", ")
-  console.log(`Summary: ${workflows.length} total workflows (${summary})`)
-        
+  
   // Display overall status message
   if (statusCounts[WORKFLOW_STATUS.SYNCED] === workflows.length) {
     console.log("All workflows are in sync.")
-  } else if (statusCounts[WORKFLOW_STATUS.MODIFIED] > 0) {
-    console.log(`There are ${statusCounts[WORKFLOW_STATUS.MODIFIED]} modified workflow(s) that could be pushed to YouTrack.`)
-    console.log("Use the 'push' command to update YouTrack with your local changes.")
-  } else if (statusCounts[WORKFLOW_STATUS.OUTDATED] > 0) {
-    console.log(`There are ${statusCounts[WORKFLOW_STATUS.OUTDATED]} outdated workflow(s) that could be updated from YouTrack.`)
-    console.log("Use the 'pull' command to update your local files from YouTrack.")
-  }
-
-  if (statusCounts[WORKFLOW_STATUS.CONFLICT] > 0) {
-    console.log(`Warning: ${statusCounts[WORKFLOW_STATUS.CONFLICT]} workflows have conflicts.`)
-    console.log("Both local and YouTrack versions have changes. Choose which to keep by using 'push' or 'pull'.")
+  } else {
+    // Display statistics summary
+    const summaryParts = []
+    if (statusCounts[WORKFLOW_STATUS.SYNCED] > 0) 
+      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.SYNCED]} synced`)
+    if (statusCounts[WORKFLOW_STATUS.MODIFIED] > 0) 
+      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.MODIFIED]} modified`)
+    if (statusCounts[WORKFLOW_STATUS.OUTDATED] > 0) 
+      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.OUTDATED]} outdated`)
+    if (statusCounts[WORKFLOW_STATUS.CONFLICT] > 0) 
+      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.CONFLICT]} conflicts`)
+    if (statusCounts[WORKFLOW_STATUS.MISSING] > 0) 
+      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.MISSING]} missing`)
+    if (statusCounts[WORKFLOW_STATUS.NEW] > 0) 
+      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.NEW]} new`)
+      
+    const summary = summaryParts.join(", ")
+    console.log(`Workflows: ${summary}`)
   }
 }

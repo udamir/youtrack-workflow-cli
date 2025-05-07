@@ -33,8 +33,9 @@ program
   .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
-    pullCommand(workflow, { host, token }),
+  .option("--force", "Force pull without checking status and confirmation")
+  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, force = false }) =>
+    pullCommand(workflow, { host, token, force }),
   )
 
 program
@@ -43,8 +44,9 @@ program
   .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
-    pushCommand(workflow, { host, token }),
+  .option("--force", "Force push without checking status and confirmation")
+  .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, force = false }) =>
+    pushCommand(workflow, { host, token, force }),
   )
 
 program
