@@ -10,8 +10,8 @@ import { isError, printItemStatus } from "../utils"
  * Command for pulling workflows from YouTrack
  */
 export const pullCommand = async (
-  workflows: string[] = [], 
-  { host = "", token = "" } = {}
+  workflows: string[] = [],
+  { host = "", token = "", force = false } = {},
 ): Promise<void> => {
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
@@ -24,82 +24,74 @@ export const pullCommand = async (
   const projectService = new ProjectService(youtrackService)
 
   let workflowsToProcess: string[] = []
+  const availableWorkflows = Object.keys(projectService.workflows)
 
-  if (!projectService.workflows.length) {
-    console.error("Add workflow first, or specify workflow name.")
+  if (!availableWorkflows.length) {
+    console.error("No workflows in project. Add workflows first.")
     return
   }
 
-  if (workflows.length > 0) {
-    // Case: Specific workflows provided as arguments
-    workflowsToProcess = workflows
-  } else if (workflows.length === 1 && workflows[0] === "@") {
-    // Special case: '@' - prompt user to select workflows with status info
-    try {
-      // Get all workflow statuses
-      const availableWorkflows = Object.keys(projectService.workflows)
-      
-      // Check statuses of workflows for better selection
-      const statuses: Record<string, string> = {}
-      let completedCount = 0
-      
-      // Create a spinner for checking statuses
-      const statusSpinner = ora({
-        text: `Checking workflow statuses (${completedCount}/${availableWorkflows.length})`,
-        color: 'blue',
-      }).start()
-      
-      for (const workflow of availableWorkflows) {
-        try {
-          const status = await projectService.workflowStatus(workflow)
-          statuses[workflow] = status
-        } catch (error) {
-          statuses[workflow] = WORKFLOW_STATUS.UNKNOWN
-        }
-        
-        completedCount++
-      }
-      
-      statusSpinner.stop()
-      
-      // Create choices based on statuses
-      const choices = availableWorkflows.map(workflow => {
-        const status = statuses[workflow]
-        const statusText = status ? ` (${status})` : ''
-        return {
-          name: `${workflow}${statusText}`,
-          value: workflow
-        }
-      })
+  if (!workflows.length && !force) {
+    // Check statuses of workflows for better selection
+    const statuses: Record<string, string> = {}
+    let completedCount = 0
 
-      // Show prompt for user to select workflows
-      const selected = await inquirer.prompt([
-        {
-          type: "checkbox",
-          name: "workflows",
-          message: "Select workflows to pull:",
-          choices,
-        },
-      ])
+    // Create a spinner for checking statuses
+    const statusSpinner = ora({
+      text: `Checking workflow statuses (0/${availableWorkflows.length})`,
+      color: "blue",
+    }).start()
 
-      if (!selected.workflows || selected.workflows.length === 0) {
-        console.log("No workflows selected")
-        return
+    for (const workflow of availableWorkflows) {
+      try {
+        statuses[workflow] = await projectService.workflowStatus(workflow)
+      } catch (error) {
+        statuses[workflow] = WORKFLOW_STATUS.UNKNOWN
       }
 
-      workflowsToProcess.push(...selected.workflows)
-    } catch (error) {
-      console.error("Error checking workflow status:", error)
+      completedCount++
+      statusSpinner.text = `Checking workflow statuses (${completedCount}/${availableWorkflows.length})`
+    }
+
+    statusSpinner.stop()
+
+    // Create choices based on statuses
+    const choices = availableWorkflows
+      .filter((workflow) => statuses[workflow] !== WORKFLOW_STATUS.SYNCED)
+      .map((workflow) => ({
+        name: `${workflow} (${statuses[workflow]})`,
+        value: workflow,
+      }))
+
+    if (!choices.length) {
+      console.log("All workflows are up to date. No workflows to pull from YouTrack")
       return
     }
+
+    // Show prompt for user to select workflows
+    const selected = await inquirer.prompt([
+      {
+        type: "checkbox",
+        name: "workflows",
+        message: "Select workflows to pull from YouTrack:",
+        choices,
+      },
+    ])
+
+    if (!selected.workflows || selected.workflows.length === 0) {
+      console.log("No workflows selected")
+      return
+    }
+
+    workflowsToProcess.push(...selected.workflows)
+  } else if (workflows.length > 0) {
+    // Case: Specific workflows provided as arguments
+    workflowsToProcess = workflows
   } else {
-    // Case: No arguments - pull all project workflows
-    console.log("Pulling all project workflows...")
+    // Case: No arguments and force - pull all project workflows
     workflowsToProcess = Object.keys(projectService.workflows)
   }
 
-  console.log(`Will pull ${workflowsToProcess.length} workflow(s)`)
-  
   // Process workflows and track progress
   let completedCount = 0
   let successCount = 0
@@ -108,21 +100,22 @@ export const pullCommand = async (
   for (const workflow of workflowsToProcess) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `Pulling workflow from YouTrack (${completedCount}/${workflowsToProcess.length})`,
-      color: 'blue',
+      text: `${workflow}: ...\nPulling workflow from YouTrack (${completedCount}/${workflowsToProcess.length})`,
+      prefixText: "  ",
+      color: "blue",
     }).start()
-    
+
     try {
       await projectService.downloadYoutrackWorkflow(workflow)
       spinner.stop()
-      
+
       // Workflow pulled successfully
       printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Pulled successfully")
       successCount++
     } catch (error) {
       spinner.stop()
       failCount++
-      
+
       if (error instanceof WorkflowNotFoundError) {
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
       } else if (error instanceof WorkflowError) {
@@ -131,7 +124,7 @@ export const pullCommand = async (
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, "Failed to pull")
       }
     }
-    
+
     completedCount++
   }
 

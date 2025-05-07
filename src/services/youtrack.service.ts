@@ -89,17 +89,24 @@ export class YoutrackService {
    * @returns True if successful
    * @throws {YouTrackApiError} If the workflow cannot be uploaded
    */
-  public async uploadWorkflow(files: WorkflowFile[]): Promise<boolean> {
+  public async uploadWorkflow(workflowName: string, files: WorkflowFile[]): Promise<boolean> {
     const zipBuffer = await zipWorkflowFiles(files)
 
-    const url = new URL("/api/admin/workflows", this.host)
+    // Create a Blob from the buffer
+    const blob = new Blob([zipBuffer], { type: 'application/zip' });
+    
+    // Create FormData and append the file
+    const form = new FormData();
+    form.append('file', blob, `${workflowName}.zip`);
+
+    const url = new URL("/api/admin/workflows/import", this.host)
     const params = {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.token}`,
-        "Content-Type": "application/zip",
+        // "Content-Type": "application/zip",
       },
-      body: zipBuffer,
+      body: form,
     }
 
     const response = await fetch(url, params)

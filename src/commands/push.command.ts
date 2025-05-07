@@ -10,8 +10,8 @@ import { isError, printItemStatus } from "../utils"
  * Command for pushing workflows to YouTrack
  */
 export const pushCommand = async (
-  workflows: string[] = [], 
-  { host = "", token = "" } = {}
+  workflows: string[] = [],
+  { host = "", token = "", force = false } = {}
 ): Promise<void> => {
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
@@ -24,20 +24,57 @@ export const pushCommand = async (
   const projectService = new ProjectService(youtrackService)
 
   let workflowsToProcess: string[] = []
+  const availableWorkflows = Object.keys(projectService.workflows)
 
-  if (!projectService.workflows.length) {
+  if (!availableWorkflows.length) {
     console.error("No workflows in project. Add workflows first.")
     return
   }
 
-  if (workflows.length === 1 && workflows[0] === "@") {
-    // Case: @ - prompt user to select workflows
+  if (!workflows.length && !force) {
+    // Check statuses of workflows for better selection
+    const statuses: Record<string, string> = {}
+    let completedCount = 0
+
+    // Create a spinner for checking statuses
+    const statusSpinner = ora({
+      text: `Checking workflow statuses (0/${availableWorkflows.length})`,
+      color: "blue",
+    }).start()
+
+    for (const workflow of availableWorkflows) {
+      try {
+        statuses[workflow] = await projectService.workflowStatus(workflow)
+      } catch (error) {
+        statuses[workflow] = WORKFLOW_STATUS.UNKNOWN
+      }
+
+      completedCount++
+      statusSpinner.text = `Checking workflow statuses (${completedCount}/${availableWorkflows.length})`
+    }
+
+    statusSpinner.stop()
+
+    // Create choices based on statuses
+    const choices = availableWorkflows
+      .filter((workflow) => statuses[workflow] !== WORKFLOW_STATUS.SYNCED)
+      .map((workflow) => ({
+        name: `${workflow} (${statuses[workflow]})`,
+        value: workflow,
+      }))
+
+    if (!choices.length) {
+      console.log("All workflows are up to date. No workflows to push to YouTrack")
+      return
+    }
+
+    // Show prompt for user to select workflows
     const selected = await inquirer.prompt([
       {
         type: "checkbox",
         name: "workflows",
         message: "Select workflows to push to YouTrack:",
-        choices: Object.keys(projectService.workflows),
+        choices,
       },
     ])
 
@@ -47,73 +84,14 @@ export const pushCommand = async (
     }
 
     workflowsToProcess.push(...selected.workflows)
-  } else if (!workflows.length) {
-    // Case: No arguments - show status and let user select workflows
-    try {
-      // Get all workflow statuses
-      const availableWorkflows = Object.keys(projectService.workflows)
-      
-      // Check statuses of workflows for better selection
-      const statuses: Record<string, string> = {}
-      let completedCount = 0
-      
-      // Create a spinner for checking statuses
-      const statusSpinner = ora({
-        text: `Checking workflow statuses (0/${availableWorkflows.length})`,
-        color: 'blue',
-      }).start()
-      
-      for (const workflow of availableWorkflows) {
-        try {
-          const status = await projectService.workflowStatus(workflow)
-          statuses[workflow] = status
-        } catch (error) {
-          statuses[workflow] = WORKFLOW_STATUS.UNKNOWN
-        }
-        
-        completedCount++
-        statusSpinner.text = `Checking workflow statuses (${completedCount}/${availableWorkflows.length})`
-      }
-      
-      statusSpinner.stop()
-      
-      // Create choices based on statuses
-      const choices = availableWorkflows.map(workflow => {
-        const status = statuses[workflow]
-        return {
-          name: `${workflow} (${status})`,
-          value: workflow,
-          disabled: status === WORKFLOW_STATUS.SYNCED || status === WORKFLOW_STATUS.MISSING
-        }
-      })
-
-      // Show prompt for user to select workflows
-      const selected = await inquirer.prompt([
-        {
-          type: "checkbox",
-          name: "workflows",
-          message: "Select workflows to push to YouTrack:",
-          choices,
-        },
-      ])
-
-      if (!selected.workflows || selected.workflows.length === 0) {
-        console.log("No workflows selected")
-        return
-      }
-
-      workflowsToProcess.push(...selected.workflows)
-    } catch (error) {
-      console.error("Error checking workflow status:", error)
-      return
-    }
-  } else {
+  } else if (workflows.length > 0) {
     // Case: Specific workflows provided as arguments
     workflowsToProcess = workflows
+  } else {
+    // Case: No arguments and force - push all project workflows
+    workflowsToProcess = availableWorkflows
   }
 
-  console.log(`Will push ${workflowsToProcess.length} workflow(s) to YouTrack`)
-  
   // Process workflows and track progress
   let completedCount = 0
   let successCount = 0
@@ -122,32 +100,35 @@ export const pushCommand = async (
   for (const workflow of workflowsToProcess) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `Pushing workflow to YouTrack (${completedCount}/${workflowsToProcess.length})`,
-      color: 'blue',
+      text: `${workflow}: ...\nPushing workflow to YouTrack (${completedCount}/${workflowsToProcess.length})`,
+      prefixText: "  ",
+      color: "blue",
     }).start()
-    
+
     try {
       await projectService.uploadWorkflow(workflow)
       spinner.stop()
-      
+
       // Workflow pushed successfully
       printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Pushed successfully")
       successCount++
     } catch (error) {
       spinner.stop()
       failCount++
-      
+
       if (error instanceof WorkflowNotFoundError) {
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
       } else if (error instanceof YouTrackApiError) {
-        printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
+        printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.responseText || "")
       } else if (error instanceof WorkflowError) {
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
       } else {
-        printItemStatus(workflow, PROGRESS_STATUS.FAILED, "Failed to push to YouTrack")
+        // For debugging - show more details on unexpected errors
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        printItemStatus(workflow, PROGRESS_STATUS.FAILED, `Failed to push: ${errorMessage}`)
       }
     }
-    
+
     completedCount++
   }
 
