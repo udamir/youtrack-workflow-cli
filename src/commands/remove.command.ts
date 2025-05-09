@@ -56,11 +56,14 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
 
   // Process workflows and track progress
   let completedCount = 0
+  let successCount = 0
+  let failCount = 0
 
   for (const workflow of workflows) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `Removing workflow from project (${completedCount}/${workflows.length})`,
+      text: `${workflow}: ...\nRemoving workflow from project (${completedCount}/${workflows.length})`,
+      prefixText: "  ",
       color: "blue",
     }).start()
 
@@ -77,6 +80,9 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
           : PROGRESS_STATUS.FAILED
 
       printItemStatus(workflow, status, result.message)
+
+      successCount += result.success ? 1 : 0
+      failCount += result.skipped ? 1 : 0
     } catch (err) {
       // Failed to remove workflow
       spinner.stop()
@@ -85,9 +91,10 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
         PROGRESS_STATUS.FAILED,
         err instanceof Error ? err.message : "Failed to remove workflow",
       )
+      failCount++
     }
     completedCount++
   }
 
-  console.log(`\nSuccessfully removed workflows: ${workflows.length}/${workflows.length}`)
+  console.log(`\nSuccessfully removed workflows: ${successCount}/${workflows.length} (${failCount} failed)`)
 }

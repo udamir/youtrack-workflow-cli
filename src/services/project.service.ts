@@ -279,7 +279,7 @@ export class ProjectService {
       return {
         success: false,
         skipped: true,
-        message: "Workflow already exists in the project"
+        message: "Workflow is already added"
       }
     }
 
@@ -289,7 +289,7 @@ export class ProjectService {
         return {
           success: false,
           skipped: true,
-          message: "Cannot fetch workflow"
+          message: "Workflow is not found"
         }
       }
       
@@ -341,7 +341,7 @@ export class ProjectService {
         return {
           success: false,
           skipped: true,
-          message: `Workflow ${name} is not in project`,
+          message: "Workflow is not in project",
         }
       }
 
@@ -354,7 +354,7 @@ export class ProjectService {
       return {
         success: true,
         skipped: false,
-        message: `Workflow ${name} removed from project`,
+        message: "Removed from project",
       }
     } catch (error) {
       return {
@@ -383,20 +383,5 @@ export class ProjectService {
   public async notAddedWorkflows(): Promise<string[]> {
     const serverWorkflows = await this.youtrack.fetchWorkflows()
     return serverWorkflows.filter((w) => !isManifestExists(w))
-  }
-
-  /**
-   * Check the status of all workflows in the project
-   * @returns Object containing workflow names and their statuses
-   */
-  public async checkStatus(): Promise<Record<string, WorkflowStatus>> {
-    const results: Record<string, WorkflowStatus> = {}
-
-    for (const workflow of Object.keys(this._workflows)) {
-      const status = await this.workflowStatus(workflow)
-      results[workflow] = status
-    }
-    
-    return results
   }
 }

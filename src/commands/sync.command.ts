@@ -3,8 +3,8 @@ import ora from "ora"
 
 import { YoutrackService, ProjectService } from "../services"
 import { isError, printItemStatus } from "../utils"
-import { PROGRESS_STATUS, SYNC_STRATEGY_AUTO, SYNC_STRATEGY_SKIP, WORKFLOW_STATUS } from "../consts"
-import { FileWatcher } from "../services/file-watcher.service"
+import { PROGRESS_STATUS, SYNC_STRATEGY_PULL, SYNC_STRATEGY_PUSH, WORKFLOW_STATUS } from "../consts"
+import { watchWorkflows } from "../tools/watcher.tools"
 import type { SyncStrategy } from "../types"
 
 type SyncCommandOptions = {
@@ -25,8 +25,7 @@ export const syncCommand = async (
     host = "", 
     token = "", 
     watch,
-    force,
-    debounce = 1000
+    force
   }: SyncCommandOptions = {},
 ): Promise<void> => {
   // Validate required parameters
@@ -100,28 +99,30 @@ export const syncCommand = async (
   for (const workflow of workflowsToProcess) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `Syncing workflow: ${workflow} (${completedCount}/${workflows.length})`,
+      text: `${workflow}: ...\nSyncing workflow (${completedCount}/${workflows.length})`,
+      prefixText: "  ",
       color: "blue",
     }).start()
     
     try {
       // Get workflow status
       const status = await projectService.workflowStatus(workflow)
-    
-      if (status === WORKFLOW_STATUS.MODIFIED) {
+      let message = ""
+
+      if (status === WORKFLOW_STATUS.MODIFIED || status === WORKFLOW_STATUS.NEW || (status === WORKFLOW_STATUS.CONFLICT && force !== SYNC_STRATEGY_PUSH)) {
         await projectService.uploadWorkflow(workflow)
-      } else if (status === WORKFLOW_STATUS.OUTDATED) {
+        message = "Pushed to YouTrack"
+      } else if (status === WORKFLOW_STATUS.OUTDATED || (status === WORKFLOW_STATUS.CONFLICT && force === SYNC_STRATEGY_PULL)) {
         await projectService.downloadYoutrackWorkflow(workflow)
-      } else if (status === WORKFLOW_STATUS.CONFLICT) {
-        await resolveConflict(workflow, projectService, watch || force || SYNC_STRATEGY_AUTO)
-      } else if (status === WORKFLOW_STATUS.NEW) {
-        await projectService.uploadWorkflow(workflow)
-      } 
+        message = "Downloaded from YouTrack"
+      } else {
+        message = "Skipped"
+      }
 
       // Stop spinner to print status line
       spinner.stop()
 
-      printItemStatus(workflow, PROGRESS_STATUS.WARNING, status === WORKFLOW_STATUS.SYNCED ? status : `${status} -> ${WORKFLOW_STATUS.SYNCED}`)
+      printItemStatus(workflow, PROGRESS_STATUS.WARNING, status === WORKFLOW_STATUS.SYNCED ? status : `${status} -> ${message}`)
       
       completedCount++
       
@@ -131,96 +132,38 @@ export const syncCommand = async (
       printItemStatus(workflow, PROGRESS_STATUS.FAILED, error instanceof Error ? error.message : "Unknown error")
     }
   }
+
+  if (!workflowsToProcess.length) {
+    console.log("No workflows to sync")
+    return
+  }
   
   // Set up watch mode if requested
   if (watch) {
     console.log('\nStarting watch mode. Press Ctrl+C to exit.');
     
-    // Set up file watching
-    const fileWatcher = new FileWatcher(projectService, {
-      forceStrategy: watch || SYNC_STRATEGY_SKIP,
-      debounceMs: debounce
+    const stop = await watchWorkflows(workflowsToProcess, async (workflowName) => {
+      const spinner = ora({
+        text: `${workflowName}: ...\nSyncing workflow`,
+        prefixText: "  ",
+        color: "blue",
+      }).start()
+      
+      try {
+        await projectService.uploadWorkflow(workflowName)
+        spinner.stop()
+        printItemStatus(workflowName, PROGRESS_STATUS.SUCCESS, "Pushed to YouTrack")
+      } catch (error) {
+        spinner.stop()
+        printItemStatus(workflowName, PROGRESS_STATUS.FAILED, error instanceof Error ? error.message : "Unknown error")
+      }
     })
-    
-    // Start watching the workflows
-    fileWatcher.watch(process.cwd(), workflows)
-    
+
     // Handle process termination
     process.on('SIGINT', () => {
       console.log('\nStopping watch mode...')
-      fileWatcher.stop()
+      stop()
       process.exit(0)
     })
-    
-    // Keep the process running
-    setInterval(() => {}, 1000)
-  }
-}
-
-/**
- * Resolve a conflict for a workflow
- * @param workflow Workflow name
- * @param projectService Project service
- * @param strategy Force strategy (if undefined, will prompt user)
- */
-async function resolveConflict(
-  workflow: string,
-  projectService: ProjectService,
-  strategy?: SyncStrategy
-): Promise<void> {
-  printItemStatus(workflow, PROGRESS_STATUS.WARNING, "Conflict detected")
-  
-  if (!strategy) {
-    // Prompt user for conflict resolution strategy
-    const { selectedStrategy } = await inquirer.prompt([
-      {
-        type: "list",
-        name: "selectedStrategy",
-        message: `Select conflict resolution strategy for ${workflow}`,
-        choices: [
-          { name: "Auto (try to merge changes)", value: "auto" },
-          { name: "Pull (overwrite local changes)", value: "pull" },
-          { name: "Push (overwrite server changes)", value: "push" },
-          { name: "Skip (do nothing)", value: "skip" }
-        ]
-      }
-    ])
-    
-    strategy = selectedStrategy
-  }
-  
-  // Execute the selected strategy
-  switch (strategy) {
-    case "auto":
-      try {
-        printItemStatus(workflow, PROGRESS_STATUS.INFO, "Attempting to merge changes...")
-        
-        // Pull first to get latest changes
-        await projectService.downloadYoutrackWorkflow(workflow)
-        
-        // Then push our changes
-        await projectService.uploadWorkflow(workflow)
-        
-        printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Successfully merged and pushed changes")
-      } catch (error) {
-        printItemStatus(workflow, PROGRESS_STATUS.FAILED, `Failed to merge: ${(error as Error).message}`)
-      }
-      break
-      
-    case "pull":
-      printItemStatus(workflow, PROGRESS_STATUS.INFO, "Pulling changes (overwriting local changes)")
-      await projectService.downloadYoutrackWorkflow(workflow)
-      printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Successfully pulled from YouTrack")
-      break
-      
-    case "push":
-      printItemStatus(workflow, PROGRESS_STATUS.INFO, "Pushing changes (overwriting server changes)")
-      await projectService.uploadWorkflow(workflow)
-      printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Successfully pushed to YouTrack")
-      break
-      
-    case "skip":
-      printItemStatus(workflow, PROGRESS_STATUS.INFO, "Skipped conflict resolution")
-      break
   }
 }

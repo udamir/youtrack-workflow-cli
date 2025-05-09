@@ -26,6 +26,11 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
       // Get all available workflows from YouTrack
       const notAddedWorkflows = await projectService.notAddedWorkflows()
 
+      if (!notAddedWorkflows.length) {
+        console.log("No workflows available to add")
+        return
+      }
+
       // Show prompt to select workflows
       const selected = await inquirer.prompt([
         {
@@ -50,34 +55,34 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
 
   // Process workflows and track progress
   let completedCount = 0
+  let successCount = 0
+  let failCount = 0
 
   for (const workflow of workflows) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `Adding workflow to project (${completedCount}/${workflows.length})`,
+      text: `${workflow}: ...\nAdding workflow to project (${completedCount}/${workflows.length})`,
       color: "blue",
+      prefixText: "  ",
     }).start()
 
-    try {
-      const result = await projectService.addWorkflow(workflow)
+    const result = await projectService.addWorkflow(workflow)
 
-      // Stop spinner to print status line
-      spinner.stop()
+    // Stop spinner to print status line
+    spinner.stop()
 
-      const status = result.skipped
-        ? PROGRESS_STATUS.WARNING
-        : result.success
-          ? PROGRESS_STATUS.SUCCESS
-          : PROGRESS_STATUS.FAILED
+    const status = result.skipped
+      ? PROGRESS_STATUS.WARNING
+      : result.success
+        ? PROGRESS_STATUS.SUCCESS
+        : PROGRESS_STATUS.FAILED
 
-      printItemStatus(workflow, status, result.message)
-    } catch (err) {
-      // Failed to add workflow
-      printItemStatus(workflow, PROGRESS_STATUS.FAILED, err instanceof Error ? err.message : "Failed to remove workflow")
-      spinner.stop()
-    }
+    printItemStatus(workflow, status, result.message)
+
     completedCount++
+    successCount += result.success ? 1 : 0
+    failCount += result.skipped ? 1 : 0
   }
 
-  console.log(`\nSuccessfully added workflows: ${workflows.length}/${workflows.length}`)
+  console.log(`\nSuccessfully added workflows: ${successCount}/${workflows.length} (${failCount} failed)`)
 }

@@ -59,11 +59,10 @@ program
   .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .option("--watch [strategy]", "Watch for file changes with specified strategy (auto, pull, push)", SYNC_STRATEGY_SKIP)
-  .option("--force [strategy]", "Force conflict resolution without prompting with specified strategy (auto, pull, push)", "auto")
-  .option("--debounce [ms]", "Debounce time in milliseconds for file watching", Number.parseInt, 1000)
-  .action((workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, watch, force, debounce }) => 
-    syncCommand(workflows, { host, token, watch, force, debounce })
+  .option("--watch", "Watch for file changes and push changes to YouTrack")
+  .option("--force [strategy]", "Force conflict resolution without prompting with specified strategy (auto, pull, push)", SYNC_STRATEGY_SKIP)
+  .action((workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, watch, force }) => 
+    syncCommand(workflows, { host, token, watch, force })
   )
 
 program

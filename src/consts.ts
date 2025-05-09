@@ -100,7 +100,10 @@ export const PROGRESS_STATUS_DATA = {
   },
 } as const
 
-export const SYNC_STRATEGY_AUTO = "auto"
 export const SYNC_STRATEGY_PULL = "pull"
 export const SYNC_STRATEGY_PUSH = "push"
 export const SYNC_STRATEGY_SKIP = "skip"
+
+export const WATCH_EVENT_ADD = "add"
+export const WATCH_EVENT_CHANGE = "change"
+export const WATCH_EVENT_UNLINK = "unlink"

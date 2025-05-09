@@ -104,12 +104,10 @@ export const pushCommand = async (
       spinner.stop()
       failCount++
 
-      if (error instanceof WorkflowNotFoundError) {
+      if (error instanceof WorkflowNotFoundError || error instanceof WorkflowError) {
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
       } else if (error instanceof YouTrackApiError) {
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.responseText || "")
-      } else if (error instanceof WorkflowError) {
-        printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
       } else {
         // For debugging - show more details on unexpected errors
         const errorMessage = error instanceof Error ? error.message : String(error)

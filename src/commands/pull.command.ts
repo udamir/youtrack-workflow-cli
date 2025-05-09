@@ -104,9 +104,7 @@ export const pullCommand = async (
       spinner.stop()
       failCount++
 
-      if (error instanceof WorkflowNotFoundError) {
-        printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
-      } else if (error instanceof WorkflowError) {
+      if (error instanceof WorkflowNotFoundError || error instanceof WorkflowError) {
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
       } else {
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, "Failed to pull")

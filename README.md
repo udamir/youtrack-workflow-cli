@@ -112,8 +112,8 @@ Synchronizes workflows between your local project and YouTrack. This command:
 - Allows you to resolve conflicts between local and YouTrack versions
 
 Options:
-- `--force [strategy]` - synchronize workflows without checking status and confirmation
-- `--watch [strategy]` - watch for file changes with specified strategy (auto, pull, push)
+- `--force [strategy]` - synchronize workflows without checking status and with specified strategy (skip, pull, push)
+- `--watch` - watch for file changes and push changes to YouTrack
 - If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
 
 ### Status Symbols
