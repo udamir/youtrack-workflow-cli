@@ -6,6 +6,7 @@ import { YoutrackService } from "../../src/services/youtrack.service"
 import { ProjectService } from "../../src/services/project.service"
 import { readLockFile } from "../../src/tools/fs.tools"
 import { TestHelper } from "./test-helpers"
+import type { WorkflowHash } from "../../src/types"
 
 describe("ProjectService Integration", () => {
   let helper: TestHelper
@@ -44,11 +45,13 @@ describe("ProjectService Integration", () => {
       const testHash = "test-hash-value"
 
       // Act - directly set the workflow hash in the workflows object
-      projectService.workflows[testWorkflowName] = {
+      // Access internal state through the updateLockFile method
+      const mockWorkflows: Record<string, WorkflowHash> = {}
+      mockWorkflows[testWorkflowName] = {
         hash: testHash,
         fileHashes: {}
       }
-      projectService.updateLockFile()
+      projectService.updateLockFile(mockWorkflows)
 
       // Assert
       const lockData = readLockFile()
@@ -73,12 +76,14 @@ describe("ProjectService Integration", () => {
 
     it("should list available workflows from YouTrack", async () => {
       // Act
-      const availableWorkflows = await projectService.availableWorkflows()
-
+      const projectWorkflows = await projectService.projectWorkflows()
+      
       // Assert
-      expect(availableWorkflows).toBeDefined()
-      expect(Array.isArray(availableWorkflows)).toBe(true)
-      console.log(`Available workflows: ${availableWorkflows.join(", ")}`)
+      expect(Array.isArray(projectWorkflows)).toBe(true)
+      console.log(`Available workflows: ${projectWorkflows.join(", ")}`)
+      
+      // Note: We don't expect specific workflows to be returned as this depends on
+      // the actual YouTrack instance. We're just verifying the method returns an array.
     })
   })
 
@@ -95,11 +100,13 @@ describe("ProjectService Integration", () => {
       const initialHash = initialCache!.hash
 
       // 2. Set the original hash in lock file
-      projectService.workflows[testWorkflowName] = {
+      // Access internal state through the updateLockFile method
+      const mockWorkflows: Record<string, WorkflowHash> = {}
+      mockWorkflows[testWorkflowName] = {
         hash: initialHash,
         fileHashes: {}
       }
-      projectService.updateLockFile()
+      projectService.updateLockFile(mockWorkflows)
 
       // 3. Verify that the current status shows files match original
       const lockData = readLockFile()
@@ -147,11 +154,13 @@ describe("ProjectService Integration", () => {
       const currentHash = cacheResult!.hash
 
       // 2. Set this hash in lock file
-      projectService.workflows[testWorkflowName] = {
+      // Access internal state through the updateLockFile method
+      const mockWorkflows: Record<string, WorkflowHash> = {}
+      mockWorkflows[testWorkflowName] = {
         hash: currentHash,
         fileHashes: {}
       }
-      projectService.updateLockFile()
+      projectService.updateLockFile(mockWorkflows)
 
       // 3. Read the lock file to verify
       const lockData = readLockFile()
