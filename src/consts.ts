@@ -100,10 +100,22 @@ export const PROGRESS_STATUS_DATA = {
   },
 } as const
 
-export const SYNC_STRATEGY_PULL = "pull"
-export const SYNC_STRATEGY_PUSH = "push"
-export const SYNC_STRATEGY_SKIP = "skip"
+export const SYNC_TYPE = {
+  PULL: "pull",
+  PUSH: "push",
+  SKIP: "skip",
+} as const
 
-export const WATCH_EVENT_ADD = "add"
-export const WATCH_EVENT_CHANGE = "change"
-export const WATCH_EVENT_UNLINK = "unlink"
+export const WATCH_EVENT = {
+  ADD: "add",
+  CHANGE: "change",
+  UNLINK: "unlink"
+} as const
+
+export const SYNC_STATUS = {
+  PULLED: "pulled",
+  PUSHED: "pushed",
+  SKIPPED: "skipped",
+  FAILED: "failed",
+  SYNCED: "synced"
+} as const

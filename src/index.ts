@@ -8,7 +8,7 @@ import { pullCommand } from "./commands/pull.command"
 import { pushCommand } from "./commands/push.command"
 import { addCommand } from "./commands/add.command"
 import { syncCommand } from "./commands/sync.command"
-import { SYNC_STRATEGY_SKIP } from "./consts"
+import { SYNC_TYPE } from "./consts"
 
 dotenv.config()
 
@@ -60,7 +60,7 @@ program
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
   .option("--watch", "Watch for file changes and push changes to YouTrack")
-  .option("--force [strategy]", "Force conflict resolution without prompting with specified strategy (auto, pull, push)", SYNC_STRATEGY_SKIP)
+  .option("--force [strategy]", "Force conflict resolution without prompting with specified strategy (skip, pull, push)", SYNC_TYPE.SKIP)
   .action((workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, watch, force }) => 
     syncCommand(workflows, { host, token, watch, force })
   )

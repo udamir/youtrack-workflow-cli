@@ -89,7 +89,6 @@ export const pullCommand = async (
     // Create spinner for tracking progress
     const spinner = ora({
       text: `${workflow}: ...\nPulling workflow from YouTrack (${completedCount}/${workflowsToProcess.length})`,
-      prefixText: "  ",
       color: "blue",
     }).start()
 

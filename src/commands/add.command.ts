@@ -63,7 +63,6 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
     const spinner = ora({
       text: `${workflow}: ...\nAdding workflow to project (${completedCount}/${workflows.length})`,
       color: "blue",
-      prefixText: "  ",
     }).start()
 
     const result = await projectService.addWorkflow(workflow)

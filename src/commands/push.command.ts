@@ -11,7 +11,7 @@ import { isError, printItemStatus } from "../utils"
  */
 export const pushCommand = async (
   workflows: string[] = [],
-  { host = "", token = "", force = false } = {}
+  { host = "", token = "", force = false } = {},
 ): Promise<void> => {
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
@@ -89,7 +89,6 @@ export const pushCommand = async (
     // Create spinner for tracking progress
     const spinner = ora({
       text: `${workflow}: ...\nPushing workflow to YouTrack (${completedCount}/${workflowsToProcess.length})`,
-      prefixText: "  ",
       color: "blue",
     }).start()
 

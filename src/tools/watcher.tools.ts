@@ -1,8 +1,8 @@
 import { watch } from "chokidar"
 import * as path from "node:path"
 
-import { WATCH_EVENT_ADD, WATCH_EVENT_CHANGE, WATCH_EVENT_UNLINK } from "../consts"
 import type { WatchEvent } from "../types"
+import { WATCH_EVENT } from "../consts"
 
 export const watchWorkflows = async (
   workflows: string[],
@@ -12,7 +12,7 @@ export const watchWorkflows = async (
     if (!workflows.length) {
       reject("No workflows to watch")
     }
-    
+
     // Create and configure the watcher
     const watcher = watch(workflows, {
       persistent: true,
@@ -27,9 +27,9 @@ export const watchWorkflows = async (
     })
 
     watcher
-      .on("add", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT_ADD))
-      .on("change", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT_CHANGE))
-      .on("unlink", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT_UNLINK))
+      .on("add", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT.ADD))
+      .on("change", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT.CHANGE))
+      .on("unlink", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT.UNLINK))
       .on("ready", () => resolve(() => watcher.close()))
       .on("error", reject)
   })

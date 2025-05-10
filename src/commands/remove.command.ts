@@ -63,7 +63,6 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
     // Create spinner for tracking progress
     const spinner = ora({
       text: `${workflow}: ...\nRemoving workflow from project (${completedCount}/${workflows.length})`,
-      prefixText: "  ",
       color: "blue",
     }).start()
 

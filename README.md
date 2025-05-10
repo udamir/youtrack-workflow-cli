@@ -103,7 +103,7 @@ Checks the status of all workflows in your project and compares them with the ve
 ### Sync
 
 ```
-ytw sync [workflow-name...] [--force [strategy]] [--watch [strategy]]
+ytw sync [workflow-name...] [--force [strategy]] [--watch]
 ```
 
 Synchronizes workflows between your local project and YouTrack. This command:

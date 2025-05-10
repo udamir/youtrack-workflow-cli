@@ -1,9 +1,17 @@
-import { readLocalWorkflowFiles, writeLocalWorkflowFiles, readLockFile, writeLockFile, isLocalWorkflow, deleteLocalWorkflowFiles, isManifestExists } from "../tools/fs.tools"
+import {
+  readLocalWorkflowFiles,
+  writeLocalWorkflowFiles,
+  readLockFile,
+  writeLockFile,
+  isLocalWorkflow,
+  deleteLocalWorkflowFiles,
+  isManifestExists,
+} from "../tools/fs.tools"
+import { WORKFLOW_STATUS, COLORS, SYNC_STATUS, SYNC_TYPE } from "../consts"
+import type { WorkflowFile, WorkflowStatus, WorkflowHash, SyncType, SyncStatus } from "../types"
 import { WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
-import type { WorkflowFile, WorkflowStatus, WorkflowHash } from "../types"
 import { calculateWorkflowHash } from "../tools/hash.tools"
 import type { YoutrackService } from "./youtrack.service"
-import { WORKFLOW_STATUS, COLORS } from "../consts"
 
 type WorkflowDataCache = {
   files: WorkflowFile[]
@@ -19,24 +27,23 @@ export type ActionResult = {
 }
 
 export class ProjectService {
-  private _workflows: Record<string, WorkflowHash> = {}
+  private _lockData: Record<string, WorkflowHash> = {}
   private _serverCache: Record<string, WorkflowDataCache | null> = {}
   private _localCache: Record<string, WorkflowDataCache | null> = {}
 
-
   constructor(private readonly youtrack: YoutrackService) {
     const data = readLockFile()
-    this._workflows = data?.workflows || {}
+    this._lockData = data?.workflows || {}
   }
 
   /**
    * Save workflows to lock file
-   * @param workflows Workflows to save
+   * @param workflowHashMap Workflows to save
    */
-  public updateLockFile(workflows?: Record<string, WorkflowHash>) {
+  public updateLockFile(workflowHashMap?: Record<string, WorkflowHash>) {
     const pkg = readLockFile()
 
-    pkg.workflows = workflows || this._workflows
+    pkg.workflows = workflowHashMap || this._lockData
 
     writeLockFile(pkg)
   }
@@ -63,11 +70,11 @@ export class ProjectService {
     try {
       const localWorkflowFiles = await readLocalWorkflowFiles(name)
       const { hash, fileHashes: files } = calculateWorkflowHash(localWorkflowFiles)
-      
+
       this._localCache[name] = {
         files: localWorkflowFiles,
         hash,
-        fileHashes: files
+        fileHashes: files,
       }
     } catch (error) {
       this._localCache[name] = null
@@ -95,7 +102,7 @@ export class ProjectService {
 
     await this.youtrack.uploadWorkflow(name, files)
 
-    this._workflows[name] = rest
+    this._lockData[name] = rest
     this.updateLockFile()
   }
 
@@ -115,11 +122,11 @@ export class ProjectService {
         this._serverCache[name] = null
       } else {
         const { hash, fileHashes: files } = calculateWorkflowHash(workflowFiles)
-        
+
         this._serverCache[name] = {
           files: workflowFiles,
           hash,
-          fileHashes: files
+          fileHashes: files,
         }
       }
     } catch (error) {
@@ -127,6 +134,57 @@ export class ProjectService {
     }
 
     return this._serverCache[name]
+  }
+
+  /**
+   * Synchronize workflows between local files and YouTrack
+   * @param workflows Array of workflow names to synchronize
+   * @param onConflict Callback function to handle conflict events
+   * @param onSync Callback function to handle sync events
+   */
+  public async syncWorkflows(
+    workflows: string[],
+    onConflict?: (workflow: string) => Promise<SyncType>,
+    onSync?: (workflow: string, syncStatus: SyncStatus, index: number) => void,
+  ) {
+    let index = 0
+
+    const getSyncType = async (workflow: string, workflowStatus: WorkflowStatus) => {
+      switch (workflowStatus) {
+        case WORKFLOW_STATUS.CONFLICT:
+          return (await onConflict?.(workflow)) || SYNC_TYPE.SKIP
+        case WORKFLOW_STATUS.MODIFIED:
+        case WORKFLOW_STATUS.NEW:
+          return SYNC_TYPE.PUSH
+        case WORKFLOW_STATUS.OUTDATED:
+          return SYNC_TYPE.PULL
+        default:
+          return SYNC_TYPE.SKIP
+      }
+    }
+
+    for (const workflow of workflows) {
+      let syncStatus: SyncStatus = SYNC_STATUS.SYNCED
+      let syncType: SyncType
+      try {
+        const status = await this.workflowStatus(workflow)
+        if (status !== WORKFLOW_STATUS.SYNCED) {
+          syncType = await getSyncType(workflow, status)
+          if (syncType === SYNC_TYPE.PUSH) {
+            await this.uploadWorkflow(workflow)
+            syncStatus = SYNC_STATUS.PUSHED
+          } else if (syncType === SYNC_TYPE.PULL) {
+            await this.downloadYoutrackWorkflow(workflow)
+            syncStatus = SYNC_STATUS.PULLED
+          } else {
+            syncStatus = SYNC_STATUS.SKIPPED
+          }
+        }
+      } catch (error) {
+        syncStatus = SYNC_STATUS.FAILED
+      }
+      onSync?.(workflow, syncStatus, index++)
+    }
   }
 
   /**
@@ -141,7 +199,7 @@ export class ProjectService {
     }
     const { files, ...rest } = data
     await writeLocalWorkflowFiles(files, name)
-    this._workflows[name] = rest
+    this._lockData[name] = rest
   }
 
   /**
@@ -150,32 +208,32 @@ export class ProjectService {
    * @returns Workflow status
    */
   public async workflowStatus(name: string): Promise<WorkflowStatus> {
-    const workflow = this._workflows[name]
+    const lockData = this._lockData[name]
     const serverCache = await this.cacheYoutrackWorkflow(name)
     const localCache = await this.cacheLocalWorkflow(name)
-    
-    if (!workflow || (localCache?.hash === serverCache?.hash && localCache?.hash !== workflow.hash)) {
-      this._workflows[name] = {
-        hash: localCache?.hash || serverCache?.hash || '',
-        fileHashes: localCache?.fileHashes || serverCache?.fileHashes || {}
+
+    if (!lockData || (localCache?.hash === serverCache?.hash && localCache?.hash !== lockData.hash)) {
+      this._lockData[name] = {
+        hash: localCache?.hash || serverCache?.hash || "",
+        fileHashes: localCache?.fileHashes || serverCache?.fileHashes || {},
       }
       this.updateLockFile()
     }
-    
+
     switch (true) {
-      case workflow === undefined:
+      case lockData === undefined:
         return WORKFLOW_STATUS.UNKNOWN
       case localCache === undefined:
         return WORKFLOW_STATUS.MISSING
       case serverCache === undefined:
         return WORKFLOW_STATUS.NEW
-      case workflow.hash !== localCache?.hash &&
-        workflow.hash !== serverCache?.hash &&
+      case lockData.hash !== localCache?.hash &&
+        lockData.hash !== serverCache?.hash &&
         localCache?.hash !== serverCache?.hash:
         return WORKFLOW_STATUS.CONFLICT
-      case workflow.hash !== localCache?.hash:
+      case lockData.hash !== localCache?.hash:
         return WORKFLOW_STATUS.MODIFIED
-      case workflow.hash !== serverCache?.hash:
+      case lockData.hash !== serverCache?.hash:
         return WORKFLOW_STATUS.OUTDATED
       default:
         return WORKFLOW_STATUS.SYNCED
@@ -188,7 +246,7 @@ export class ProjectService {
    * @returns Record of filename to status mapping
    */
   public async getWorkflowFileStatus(name: string): Promise<Record<string, WorkflowStatus>> {
-    const workflowLockData = this._workflows[name]
+    const workflowLockData = this._lockData[name]
     // Get server and local caches
     const serverCache = await this.cacheYoutrackWorkflow(name)
     const localCache = await this.cacheLocalWorkflow(name)
@@ -198,16 +256,16 @@ export class ProjectService {
     }
 
     if (!workflowLockData || (localCache?.hash === serverCache?.hash && localCache?.hash !== workflowLockData.hash)) {
-      this._workflows[name] = {
-        hash: localCache?.hash || serverCache?.hash || '',
-        fileHashes: localCache?.fileHashes || serverCache?.fileHashes || {}
+      this._lockData[name] = {
+        hash: localCache?.hash || serverCache?.hash || "",
+        fileHashes: localCache?.fileHashes || serverCache?.fileHashes || {},
       }
       this.updateLockFile()
     }
 
     const results: Record<string, WorkflowStatus> = {}
     const storedFileHashes = workflowLockData.fileHashes || {}
-    
+
     // Process local files first
     if (localCache) {
       for (const [fileName, fileHash] of Object.entries(localCache.fileHashes)) {
@@ -251,11 +309,17 @@ export class ProjectService {
 
   /**
    * Check the status of all workflows in the project
+   * @param workflows Array of workflow names to check
+   * @param onStatus Callback function to handle status events
    * @returns Record of workflow name to status mapping
    */
-  public async checkWorkflowStatuses(workflows?: string[]): Promise<Record<string, WorkflowStatus>> {
+  public async checkWorkflowStatuses(
+    workflows?: string[],
+    onStatus?: (workflow: string, status: WorkflowStatus, index: number) => void,
+  ): Promise<Record<string, WorkflowStatus>> {
     const statuses: Record<string, WorkflowStatus> = {}
-    const _workflows = workflows || await this.projectWorkflows()
+    const _workflows = workflows || (await this.projectWorkflows())
+    let index = 0
 
     for (const workflow of _workflows) {
       try {
@@ -263,6 +327,7 @@ export class ProjectService {
       } catch (error) {
         statuses[workflow] = WORKFLOW_STATUS.UNKNOWN
       }
+      onStatus?.(workflow, statuses[workflow], index++)
     }
 
     return statuses
@@ -279,7 +344,7 @@ export class ProjectService {
       return {
         success: false,
         skipped: true,
-        message: "Workflow is already added"
+        message: "Workflow is already added",
       }
     }
 
@@ -289,28 +354,28 @@ export class ProjectService {
         return {
           success: false,
           skipped: true,
-          message: "Workflow is not found"
+          message: "Workflow is not found",
         }
       }
-      
+
       const { files, ...rest } = data
       await writeLocalWorkflowFiles(files, workflow)
-      this._workflows[workflow] = rest
-      
+      this._lockData[workflow] = rest
+
       // Update lock file with the changed workflows list
       this.updateLockFile()
 
       return {
         success: true,
         skipped: false,
-        message: `${COLORS.FG.GREEN}Added${COLORS.RESET}`
+        message: `${COLORS.FG.GREEN}Added${COLORS.RESET}`,
       }
     } catch (error) {
       return {
         success: false,
         skipped: false,
         error: error instanceof Error ? error : new Error(String(error)),
-        message: "Failed to add workflow"
+        message: "Failed to add workflow",
       }
     }
   }
@@ -348,8 +413,8 @@ export class ProjectService {
       await deleteLocalWorkflowFiles(name)
 
       // Remove from lock file
-      delete this._workflows[name]
-      writeLockFile({ workflows: this._workflows })
+      delete this._lockData[name]
+      writeLockFile({ workflows: this._lockData })
 
       return {
         success: true,
@@ -372,7 +437,7 @@ export class ProjectService {
    * @returns Record of file hashes or empty object if not found
    */
   public async getWorkflowFileHashes(workflowName: string): Promise<Record<string, string>> {
-    const workflowData = this._workflows[workflowName]
+    const workflowData = this._lockData[workflowName]
     return workflowData?.fileHashes || {}
   }
 
@@ -383,5 +448,13 @@ export class ProjectService {
   public async notAddedWorkflows(): Promise<string[]> {
     const serverWorkflows = await this.youtrack.fetchWorkflows()
     return serverWorkflows.filter((w) => !isManifestExists(w))
+  }
+
+  /**
+   * Clear local workflow cache
+   * @param workflowName Workflow name
+   */
+  public clearLocalWorkflowCache(workflowName: string) {
+    delete this._localCache[workflowName]
   }
 }

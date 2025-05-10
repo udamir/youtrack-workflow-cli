@@ -33,7 +33,7 @@ export const isError = (condition: unknown, message: string): boolean => {
  * @param status Status of the workflow or project
  * @param message Message to display
  */
-export const printItemStatus = (item: string, status: ProgressStatus, message: string, shift = 3) => {
+export const printItemStatus = (item: string, status: ProgressStatus, message: string, shift = 0) => {
   const { icon, color } = PROGRESS_STATUS_DATA[status]
   console.log(`${" ".repeat(shift)}${colorize(icon, color)} ${item}: ${colorize(message, color)}`)
 }
