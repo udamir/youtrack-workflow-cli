@@ -175,6 +175,6 @@ export class TypeScriptService {
       "\ntype Issue = entities.Issue<Fields, WorkItemTypeValue>;\ntype IssueWorkItem = entities.IssueWorkItem<WorkItemTypeValue>"
 
     // Compile the full type definition content
-    return `${imports}\n\n${bundleTypesStr}\n${workItemType}\n\n${fieldsInterface}\n${issueTypes}\n`
+    return `${imports}\n${bundleTypesStr}\n${workItemType}\n\n${fieldsInterface}\n${issueTypes}\n`
   }
 }

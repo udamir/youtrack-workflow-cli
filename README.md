@@ -168,8 +168,62 @@ YOUTRACK_BASE_URL=https://youtrack.example.com
 YOUTRACK_TOKEN=your-permanent-token
 ```
 
+## TypeScript Type Definitions
+
+You can use [youtrack-workflow-api-types](https://github.com/udamir/youtrack-workflow-api-types) package and generated types for your project to write type-safe workflows.
+
+```
+npm install --save-dev youtrack-workflow-api-types typescript
+```
+
+Add `paths` to your project's `tsconfig.json` with following content:
+
+```json
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "target": "es2020",
+    "module": "commonjs",
+    "baseUrl": ".",
+    "paths": {
+      "@jetbrains/youtrack-scripting-api": ["node_modules/youtrack-workflow-api-types"],
+      "@jetbrains/youtrack-scripting-api/*": ["node_modules/youtrack-workflow-api-types/*"]
+    }
+  },
+  "include": [
+    "**/*.js"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
+```
+
+Add [JSDoc annotations](https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html) to your workflow files:
+
+```js
+/** @import { Issue } from '../types/demo' */
+
+exports.rule = entities.Issue.onChange({
+  title: 'example',
+  action: (ctx) => {
+    /** @type {Issue} */
+    const issue = ctx.issue;    
+   
+    // Use typescript validation for issue fields and work items
+  }
+});
+```
+
 ## Special Instructions for SSL Certificates
 
 If your YouTrack domain uses an SSL certificate that is issued by a known certificate authority, you can establish a connection using just your personal permanent token. Your certificate is already included in CA certificate store that is built into Node.js. For certificates that are issued by a CA that is not recognized automatically or is self-signed, you need to modify the environment variables in Node.js to recognize or ignore your certificate.
 
 For more information, [refer to the YouTrack documentation](https://www.jetbrains.com/help/youtrack/incloud/js-workflow-external-editor.html#special-instructions-ssl-certificates).
+
+# License
+
+MIT
