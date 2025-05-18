@@ -1,5 +1,42 @@
-import { COLORS, PROGRESS_STATUS_DATA } from "./consts"
-import type { ProgressStatus } from "./types"
+import { COLORS, PROGRESS_STATUS, PROGRESS_STATUS_DATA } from "./consts"
+import type { ProgressStatus, ActionResult } from "./types"
+
+/**
+ * Returns an action result with a success status
+ * @param message Message to display
+ * @returns Action result with success status
+ */
+export const successStatus = (message: string): ActionResult => ({ status: "success", message })
+
+/**
+ * Returns an action result with a skipped status
+ * @param message Error message to display
+ * @returns Action result with skipped status
+ */
+export const skippedStatus = (message: string): ActionResult => ({ status: "skipped", message })
+
+/**
+ * Returns an action result with an error status
+ * @param message Error message to display
+ * @returns Action result with error status
+ */
+export const errorStatus = (message: string): ActionResult => ({ status: "error", message })
+
+/**
+ * Returns the progress status based on the action result
+ * @param actionResult Action result to get progress status from
+ * @returns Progress status
+ */
+export const progressStatus = (actionResult: ActionResult): ProgressStatus => {
+  switch (actionResult.status) {
+    case "skipped":
+      return PROGRESS_STATUS.WARNING
+    case "success":
+      return PROGRESS_STATUS.SUCCESS
+    default:
+      return PROGRESS_STATUS.FAILED
+  }
+}
 
 /**
  * Color a string with ANSI color codes
@@ -45,16 +82,49 @@ export const printItemStatus = (item: string, status: ProgressStatus, message: s
  * @param prefix Prefix to add if the string starts with a number
  * @returns Normalized string
  */
-export function normalize(input: string, capitalizeFirst = false, prefix = '_'): string {
+export function normalize(input: string, capitalizeFirst = false, prefix = "_"): string {
   const result = input
     .split(/[^a-zA-Z0-9]+/)
     .filter(Boolean)
     .map((w, i) =>
-      i === 0 && !capitalizeFirst
-        ? w.toLowerCase()
-        : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+      i === 0 && !capitalizeFirst ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
     )
-    .join('');
+    .join("")
 
-  return result ? (/\d/.test(result[0]) ? prefix + result : result) : prefix;
+  return result ? (/\d/.test(result[0]) ? prefix + result : result) : prefix
+}
+
+/**
+ * Counter for tracking the number of items in each status
+ */
+export class StatusCounter {
+  private _counters: Record<string, number> = {}
+
+  /**
+   * Increment the counter for a specific status
+   * @param status Status to increment
+   */
+  public inc(status: string): void {
+    if (!this._counters[status]) {
+      this._counters[status] = 0
+    }
+    this._counters[status]++
+  }
+
+  /**
+   * Get the count for a specific status
+   * @param status Status to get count for
+   * @returns Count of items in the specified status
+   */
+  public get(status: string): number {
+    return this._counters[status] ?? 0
+  }
+
+  /**
+   * Get the total count of all statuses
+   * @returns Total count of all statuses
+   */
+  public get total(): number {
+    return Object.values(this._counters).reduce((a, b) => a + b, 0)
+  }
 }

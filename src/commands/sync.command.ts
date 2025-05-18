@@ -3,9 +3,9 @@ import ora from "ora"
 
 import { PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE } from "../consts"
 import { YoutrackService, ProjectService } from "../services"
-import { isError, printItemStatus } from "../utils"
 import { watchWorkflows } from "../tools/watcher.tools"
 import type { SyncStatus, SyncType } from "../types"
+import { isError, printItemStatus } from "../utils"
 
 type SyncCommandOptions = {
   host?: string

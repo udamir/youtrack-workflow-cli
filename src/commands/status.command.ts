@@ -1,9 +1,9 @@
 import ora from "ora"
 
 import { PROGRESS_STATUS, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../consts"
+import { isError, printItemStatus, StatusCounter } from "../utils"
 import type { ProgressStatus, WorkflowStatus } from "../types"
 import { YoutrackService, ProjectService } from "../services"
-import { isError, printItemStatus } from "../utils"
 import { isManifestExists } from "../tools/fs.tools"
 
 /**
@@ -33,13 +33,7 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
   }
 
   // Process workflows and track progress
-  let completedCount = 0
-
-  // Track counts for summary
-  const statusCounts: Record<string, number> = {}
-  for (const status of Object.values(WORKFLOW_STATUS)) {
-    statusCounts[status] = 0
-  }
+  const counter = new StatusCounter()
 
   const progressStatus = (status: WorkflowStatus): ProgressStatus => {
     switch (status) {
@@ -56,14 +50,14 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
   for (const workflow of workflows) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `${workflow}: ...\nChecking workflow status (${completedCount}/${workflows.length})`,
+      text: `${workflow}: ...\nChecking workflow status (${counter.total}/${workflows.length})`,
       color: "blue",
     }).start()
 
     try {
       // Get workflow status
       const status = await projectService.workflowStatus(workflow)
-      statusCounts[status]++
+      counter.inc(status)
 
       const fileStatus = status === WORKFLOW_STATUS.CONFLICT ? await projectService.getWorkflowFileStatus(workflow) : {}
 
@@ -78,29 +72,27 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
       })
     } catch (err) {
       // Failed to check workflow status
-      statusCounts[WORKFLOW_STATUS.UNKNOWN]++
+      counter.inc(WORKFLOW_STATUS.UNKNOWN)
       spinner.stop()
       printItemStatus(workflow, PROGRESS_STATUS.FAILED, err instanceof Error ? err.message : "Error checking status")
     }
-
-    completedCount++
   }
 
   // Display overall status message
-  if (statusCounts[WORKFLOW_STATUS.SYNCED] === workflows.length) {
+  if (counter.get(WORKFLOW_STATUS.SYNCED) === workflows.length) {
     console.log("All workflows are in sync.")
   } else {
     // Display statistics summary
     const summaryParts = []
-    if (statusCounts[WORKFLOW_STATUS.SYNCED] > 0) summaryParts.push(`${statusCounts[WORKFLOW_STATUS.SYNCED]} synced`)
-    if (statusCounts[WORKFLOW_STATUS.MODIFIED] > 0)
-      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.MODIFIED]} modified`)
-    if (statusCounts[WORKFLOW_STATUS.OUTDATED] > 0)
-      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.OUTDATED]} outdated`)
-    if (statusCounts[WORKFLOW_STATUS.CONFLICT] > 0)
-      summaryParts.push(`${statusCounts[WORKFLOW_STATUS.CONFLICT]} conflicts`)
-    if (statusCounts[WORKFLOW_STATUS.MISSING] > 0) summaryParts.push(`${statusCounts[WORKFLOW_STATUS.MISSING]} missing`)
-    if (statusCounts[WORKFLOW_STATUS.NEW] > 0) summaryParts.push(`${statusCounts[WORKFLOW_STATUS.NEW]} new`)
+    if (counter.get(WORKFLOW_STATUS.SYNCED) > 0) summaryParts.push(`${counter.get(WORKFLOW_STATUS.SYNCED)} synced`)
+    if (counter.get(WORKFLOW_STATUS.MODIFIED) > 0)
+      summaryParts.push(`${counter.get(WORKFLOW_STATUS.MODIFIED)} modified`)
+    if (counter.get(WORKFLOW_STATUS.OUTDATED) > 0)
+      summaryParts.push(`${counter.get(WORKFLOW_STATUS.OUTDATED)} outdated`)
+    if (counter.get(WORKFLOW_STATUS.CONFLICT) > 0)
+      summaryParts.push(`${counter.get(WORKFLOW_STATUS.CONFLICT)} conflicts`)
+    if (counter.get(WORKFLOW_STATUS.MISSING) > 0) summaryParts.push(`${counter.get(WORKFLOW_STATUS.MISSING)} missing`)
+    if (counter.get(WORKFLOW_STATUS.NEW) > 0) summaryParts.push(`${counter.get(WORKFLOW_STATUS.NEW)} new`)
 
     const summary = summaryParts.join(", ")
     console.log(`Workflows: ${summary}`)

@@ -7,9 +7,10 @@ import {
   deleteLocalWorkflowFiles,
   isManifestExists,
 } from "../tools/fs.tools"
-import { WORKFLOW_STATUS, COLORS, SYNC_STATUS, SYNC_TYPE } from "../consts"
-import type { WorkflowFile, WorkflowStatus, WorkflowHash, SyncType, SyncStatus } from "../types"
+import type { WorkflowFile, WorkflowStatus, WorkflowHash, SyncType, SyncStatus, ActionResult } from "../types"
 import { WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
+import { errorStatus, skippedStatus, successStatus } from "../utils"
+import { WORKFLOW_STATUS, SYNC_STATUS, SYNC_TYPE } from "../consts"
 import { calculateWorkflowHash } from "../tools/hash.tools"
 import type { YoutrackService } from "./youtrack.service"
 
@@ -17,13 +18,6 @@ type WorkflowDataCache = {
   files: WorkflowFile[]
   hash: string
   fileHashes: Record<string, string>
-}
-
-export type ActionResult = {
-  success: boolean
-  skipped: boolean
-  error?: Error
-  message: string
 }
 
 export class ProjectService {
@@ -341,21 +335,13 @@ export class ProjectService {
    */
   public async addWorkflow(workflow: string): Promise<ActionResult> {
     if (isLocalWorkflow(workflow)) {
-      return {
-        success: false,
-        skipped: true,
-        message: "Workflow is already added",
-      }
+      return skippedStatus("Workflow is already added")
     }
 
     try {
       const data = await this.cacheYoutrackWorkflow(workflow)
       if (!data) {
-        return {
-          success: false,
-          skipped: true,
-          message: "Workflow is not found",
-        }
+        return skippedStatus("Workflow is not found")
       }
 
       const { files, ...rest } = data
@@ -365,18 +351,9 @@ export class ProjectService {
       // Update lock file with the changed workflows list
       this.updateLockFile()
 
-      return {
-        success: true,
-        skipped: false,
-        message: `${COLORS.FG.GREEN}Added${COLORS.RESET}`,
-      }
+      return successStatus("Added")
     } catch (error) {
-      return {
-        success: false,
-        skipped: false,
-        error: error instanceof Error ? error : new Error(String(error)),
-        message: "Failed to add workflow",
-      }
+      return errorStatus(error instanceof Error ? error.message : String(error))
     }
   }
 
@@ -403,11 +380,7 @@ export class ProjectService {
   public async removeWorkflow(name: string): Promise<ActionResult> {
     try {
       if (!isLocalWorkflow(name)) {
-        return {
-          success: false,
-          skipped: true,
-          message: "Workflow is not in project",
-        }
+        return skippedStatus("Workflow is not in project")
       }
 
       await deleteLocalWorkflowFiles(name)
@@ -416,18 +389,9 @@ export class ProjectService {
       delete this._lockData[name]
       writeLockFile({ workflows: this._lockData })
 
-      return {
-        success: true,
-        skipped: false,
-        message: "Removed from project",
-      }
+      return successStatus("Removed")
     } catch (error) {
-      return {
-        success: false,
-        skipped: false,
-        error: error as Error,
-        message: `Failed to remove workflow ${name}: ${(error as Error).message}`,
-      }
+      return errorStatus(error instanceof Error ? error.message : String(error))
     }
   }
 

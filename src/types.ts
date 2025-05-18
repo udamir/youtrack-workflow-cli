@@ -36,3 +36,8 @@ export type WorkflowHash = {
 export type SyncType = (typeof SYNC_TYPE)[keyof typeof SYNC_TYPE]
 export type WatchEvent = (typeof WATCH_EVENT)[keyof typeof WATCH_EVENT]
 export type SyncStatus = (typeof SYNC_STATUS)[keyof typeof SYNC_STATUS]
+
+export type ActionResult = {
+  status: "success" | "error" | "skipped"
+  message: string
+}

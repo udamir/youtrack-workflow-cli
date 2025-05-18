@@ -1,10 +1,10 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
+import { isError, printItemStatus, StatusCounter } from "../utils"
 import { WorkflowError, WorkflowNotFoundError } from "../errors"
 import { YoutrackService, ProjectService } from "../services"
 import { PROGRESS_STATUS, WORKFLOW_STATUS } from "../consts"
-import { isError, printItemStatus } from "../utils"
 
 /**
  * Command for pulling workflows from YouTrack
@@ -81,14 +81,12 @@ export const pullCommand = async (
   }
 
   // Process workflows and track progress
-  let completedCount = 0
-  let successCount = 0
-  let failCount = 0
+  const counter = new StatusCounter()
 
   for (const workflow of workflowsToProcess) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `${workflow}: ...\nPulling workflow from YouTrack (${completedCount}/${workflowsToProcess.length})`,
+      text: `${workflow}: ...\nPulling workflow from YouTrack (${counter.total}/${workflowsToProcess.length})`,
       color: "blue",
     }).start()
 
@@ -98,10 +96,10 @@ export const pullCommand = async (
 
       // Workflow pulled successfully
       printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Pulled successfully")
-      successCount++
+      counter.inc(PROGRESS_STATUS.SUCCESS)
     } catch (error) {
       spinner.stop()
-      failCount++
+      counter.inc(PROGRESS_STATUS.FAILED)
 
       if (error instanceof WorkflowNotFoundError || error instanceof WorkflowError) {
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, error.message)
@@ -109,9 +107,9 @@ export const pullCommand = async (
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, "Failed to pull")
       }
     }
-
-    completedCount++
   }
 
-  console.log(`\nPulled workflows: ${successCount}/${workflowsToProcess.length} (${failCount} failed)`)
+  console.log(
+    `\nPulled workflows: ${counter.get(PROGRESS_STATUS.SUCCESS)} (${counter.get(PROGRESS_STATUS.FAILED)} failed)`,
+  )
 }

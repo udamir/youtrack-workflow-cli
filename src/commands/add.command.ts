@@ -1,9 +1,8 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
+import { isError, printItemStatus, progressStatus, StatusCounter } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
-import { isError, printItemStatus } from "../utils"
-import { PROGRESS_STATUS } from "../consts"
 
 /**
  * Command to add workflows to a project
@@ -54,14 +53,12 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
   }
 
   // Process workflows and track progress
-  let completedCount = 0
-  let successCount = 0
-  let failCount = 0
+  const counter = new StatusCounter()
 
   for (const workflow of workflows) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `${workflow}: ...\nAdding workflow to project (${completedCount}/${workflows.length})`,
+      text: `${workflow}: ...\nAdding workflow to project (${counter.total}/${workflows.length})`,
       color: "blue",
     }).start()
 
@@ -70,18 +67,12 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
     // Stop spinner to print status line
     spinner.stop()
 
-    const status = result.skipped
-      ? PROGRESS_STATUS.WARNING
-      : result.success
-        ? PROGRESS_STATUS.SUCCESS
-        : PROGRESS_STATUS.FAILED
+    printItemStatus(workflow, progressStatus(result), result.message)
 
-    printItemStatus(workflow, status, result.message)
-
-    completedCount++
-    successCount += result.success ? 1 : 0
-    failCount += result.skipped ? 1 : 0
+    counter.inc(result.status)
   }
 
-  console.log(`\nSuccessfully added workflows: ${successCount}/${workflows.length} (${failCount} failed)`)
+  console.log(
+    `\nSuccessfully added workflows: ${counter.get("success")} (${counter.get("skipped")} skipped, ${counter.get("error")} failed)`,
+  )
 }

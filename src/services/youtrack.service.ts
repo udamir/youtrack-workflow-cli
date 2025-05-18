@@ -51,7 +51,7 @@ export type CustomFieldInfo = {
   values?: string[]
 }
 
-/** 
+/**
  * Service for interacting with YouTrack API
  */
 export class YoutrackService {
@@ -70,36 +70,36 @@ export class YoutrackService {
    */
   private async fetch<T>(path: string, type: "json" | "blob" = "json", options: RequestInit = {}): Promise<T> {
     // Construct full URL
-    const url = new URL(path, this.host);
-    
+    const url = new URL(path, this.host)
+
     // Set up default headers with authorization
     const headers = {
       Authorization: `Bearer ${this.token}`,
       ...(type === "blob" ? { Accept: "application/zip" } : {}),
-      ...options.headers
-    };
-    
+      ...options.headers,
+    }
+
     // Create params object with headers
     const params = {
       ...options,
-      headers
-    };
-    
+      headers,
+    }
+
     // Make the request
-    const response = await fetch(url, params);
-    
+    const response = await fetch(url, params)
+
     // Handle common error cases
     if (response.status === 401) {
-      throw new YouTrackApiError("Unauthorized: YOUTRACK_TOKEN is invalid", response.status);
+      throw new YouTrackApiError("Unauthorized: YOUTRACK_TOKEN is invalid", response.status)
     }
-    
+
     if (!response.ok) {
       const text = await response.text()
-      throw new YouTrackApiError(`Request failed with status ${response.status}: ${path}`, response.status, text);
+      throw new YouTrackApiError(`Request failed with status ${response.status}: ${path}`, response.status, text)
     }
-    
+
     // Parse JSON response
-    return type === "json" ? response.json() : response.blob() as Promise<T>;
+    return type === "json" ? response.json() : (response.blob() as Promise<T>)
   }
 
   /**
@@ -108,18 +108,17 @@ export class YoutrackService {
    */
   public async fetchWorkflows(): Promise<string[]> {
     try {
-      const data = await this.fetch<WorkflowEntity[]>("/api/admin/workflows?fields=id,name&$top=-1");
-      return data.map(({ name }) => name);
+      const data = await this.fetch<WorkflowEntity[]>("/api/admin/workflows?fields=id,name&$top=-1")
+      return data.map(({ name }) => name)
     } catch (error) {
       if (error instanceof YouTrackApiError) {
-        throw error;
-      } else {
-        throw new YouTrackApiError(
-          `Cannot fetch workflows from '${this.host}'`,
-          500,
-          error instanceof Error ? error.message : "Unknown error"
-        );
+        throw error
       }
+      throw new YouTrackApiError(
+        `Cannot fetch workflows from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
     }
   }
 
@@ -131,8 +130,8 @@ export class YoutrackService {
    */
   public async fetchWorkflow(workflow: string): Promise<WorkflowFile[] | null> {
     // Remove @ prefix but don't encode the whole name
-    const workflowName = workflow.replace(/^@/, "");
-    
+    const workflowName = workflow.replace(/^@/, "")
+
     try {
       const blob = await this.fetch<Blob>(`/api/admin/workflows/${workflowName}`, "blob")
 
@@ -141,14 +140,13 @@ export class YoutrackService {
       return unzipWorkflowFiles(Buffer.from(arrayBuffer))
     } catch (error) {
       if (error instanceof YouTrackApiError) {
-        throw error;
-      } else {
-        throw new YouTrackApiError(
-          `Error while fetching workflow '${workflow}' from '${this.host}'`,
-          500,
-          error instanceof Error ? error.message : "Unknown error"
-        );
+        throw error
       }
+      throw new YouTrackApiError(
+        `Error while fetching workflow '${workflow}' from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
     }
   }
 
@@ -162,24 +160,23 @@ export class YoutrackService {
     const zipBuffer = await zipWorkflowFiles(files)
 
     // Create a Blob from the buffer
-    const blob = new Blob([zipBuffer], { type: 'application/zip' });
-    
+    const blob = new Blob([zipBuffer], { type: "application/zip" })
+
     // Create FormData and append the file
-    const form = new FormData();
-    form.append('file', blob, `${workflowName}.zip`);
+    const form = new FormData()
+    form.append("file", blob, `${workflowName}.zip`)
 
     try {
       await this.fetch("/api/admin/workflows/import", "json", { method: "POST", body: form })
     } catch (error) {
       if (error instanceof YouTrackApiError) {
-        throw error;
-      } else {
-        throw new YouTrackApiError(
-          `Error while uploading workflow '${workflowName}' to '${this.host}'`,
-          500,
-          error instanceof Error ? error.message : "Unknown error"
-        );
+        throw error
       }
+      throw new YouTrackApiError(
+        `Error while uploading workflow '${workflowName}' to '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
     }
 
     return true
@@ -195,14 +192,13 @@ export class YoutrackService {
       return this.fetch("/api/admin/projects?fields=id,name,shortName")
     } catch (error) {
       if (error instanceof YouTrackApiError) {
-        throw error;
-      } else {
-        throw new YouTrackApiError(
-          `Cannot fetch projects from '${this.host}'`,
-          500,
-          error instanceof Error ? error.message : "Unknown error"
-        );
+        throw error
       }
+      throw new YouTrackApiError(
+        `Cannot fetch projects from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
     }
   }
 
@@ -213,8 +209,10 @@ export class YoutrackService {
    */
   public async getProjectCustomFields(projectId: string): Promise<CustomFieldInfo[]> {
     try {
-      const fields = await this.fetch<CustomFieldEntity[]>(`/api/admin/projects/${projectId}/customFields?top=-1&fields=id,bundle(id),field(name,fieldType(isMultiValue,isBundleType,valueType)),canBeEmpty`)
-      
+      const fields = await this.fetch<CustomFieldEntity[]>(
+        `/api/admin/projects/${projectId}/customFields?top=-1&fields=id,bundle(id),field(name,fieldType(isMultiValue,isBundleType,valueType)),canBeEmpty`,
+      )
+
       const customFields: CustomFieldInfo[] = []
       for (const field of fields) {
         const fieldValues: CustomFieldInfo = {
@@ -230,18 +228,17 @@ export class YoutrackService {
         }
         customFields.push(fieldValues)
       }
-  
+
       return customFields
     } catch (error) {
       if (error instanceof YouTrackApiError) {
-        throw error;
-      } else {
-        throw new YouTrackApiError(
-          `Cannot fetch custom fields for project '${projectId}' from '${this.host}'`,
-          500,
-          error instanceof Error ? error.message : "Unknown error"
-        );
+        throw error
       }
+      throw new YouTrackApiError(
+        `Cannot fetch custom fields for project '${projectId}' from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
     }
   }
 
@@ -254,20 +251,21 @@ export class YoutrackService {
    */
   public async getCustomFieldBundle(type: string, bundleId: string): Promise<CustomFieldBundleEntity[]> {
     try {
-      return this.fetch<CustomFieldBundleEntity[]>(`/api/admin/customFieldSettings/bundles/${type}/${bundleId}/values?top=-1&fields=id,name`)
+      return this.fetch<CustomFieldBundleEntity[]>(
+        `/api/admin/customFieldSettings/bundles/${type}/${bundleId}/values?top=-1&fields=id,name`,
+      )
     } catch (error) {
       if (error instanceof YouTrackApiError) {
-        throw error;
-      } else {
-        throw new YouTrackApiError(
-          `Cannot fetch custom field bundle for type '${type}' and bundle ID '${bundleId}' from '${this.host}'`,
-          500,
-          error instanceof Error ? error.message : "Unknown error"
-        );
+        throw error
       }
+      throw new YouTrackApiError(
+        `Cannot fetch custom field bundle for type '${type}' and bundle ID '${bundleId}' from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
     }
   }
-  
+
   /**
    * Get project work item types (workflows)
    * @param projectId Project ID
@@ -275,24 +273,25 @@ export class YoutrackService {
    */
   public async getProjectWorkflowItems(projectId: string): Promise<string[]> {
     try {
-      const response = await this.fetch<{ workItemTypes?: WorkflowItemEntity[] }>(`/api/admin/projects/${projectId}/timeTrackingSettings?fields=workItemTypes(id,name)&$top=-1`)
-      
+      const response = await this.fetch<{ workItemTypes?: WorkflowItemEntity[] }>(
+        `/api/admin/projects/${projectId}/timeTrackingSettings?fields=workItemTypes(id,name)&$top=-1`,
+      )
+
       // Extract work item type names from the response
       if (response?.workItemTypes && Array.isArray(response.workItemTypes)) {
-        return response.workItemTypes.map(item => item.name);
+        return response.workItemTypes.map((item) => item.name)
       }
-      
-      return []; // Return empty array if no work item types were found
+
+      return [] // Return empty array if no work item types were found
     } catch (error) {
       if (error instanceof YouTrackApiError) {
-        throw error;
-      } else {
-        throw new YouTrackApiError(
-          `Cannot fetch work item types for project '${projectId}' from '${this.host}'`,
-          500,
-          error instanceof Error ? error.message : "Unknown error"
-        );
+        throw error
       }
+      throw new YouTrackApiError(
+        `Cannot fetch work item types for project '${projectId}' from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
     }
   }
 }
