@@ -14,18 +14,18 @@ type FieldData = {
 }
 
 const typeMapping: Record<string, string> = {
-  enum: "EnumField",
-  state: "State",
-  build: "ProjectBuild",
-  version: "ProjectVersion",
-  period: "Period",
+  enum: "entities.EnumField",
+  state: "entities.State",
+  build: "entities.ProjectBuild",
+  version: "entities.ProjectVersion",
+  ownedfield: "entities.OwnedField",
+  period: "dateTime.Period",
+  user: "entities.User",
   date: "number",
   integer: "number",
   float: "number",
   text: "string",
   string: "string",
-  user: "User",
-  ownedfield: "OwnedField",
 }
 
 export class TypeScriptService {
@@ -112,14 +112,14 @@ export class TypeScriptService {
 
       // Handle multi-value fields
       if (field.isMultiValue) {
-        fieldType = `YTSet<${fieldType}>`
+        fieldType = `entities.Set<${fieldType}>`
       } else if (field.canBeEmpty) {
         // Handle nullable fields
         fieldType += " | null"
       }
 
       // For multi-value fields or getters/setters
-      if (field.isBundle && !field.isMultiValue && field.type !== "User") {
+      if (field.isBundle && !field.isMultiValue && field.type !== "entities.User") {
         // Add getter and setter with comment before them
         fieldLines.push(`  // ${comment}`)
         fieldLines.push(`  get ${fieldNameFormatted}(): ${fieldType};`)
@@ -151,7 +151,7 @@ export class TypeScriptService {
   ): string {
     // Generate imports section
     const imports = ["entities", "date-time"]
-      .map((p) => `import ${normalize(p)} from '@jetbrains/youtrack-scripting-api/${p}'`)
+      .map((p) => `import type ${normalize(p)} from '@jetbrains/youtrack-scripting-api/${p}'`)
       .join("\n")
 
     // Generate custom bundle types
@@ -172,23 +172,9 @@ export class TypeScriptService {
 
     // Generate the Issue and IssueWorkItem types
     const issueTypes =
-      "\ntype Issue = YTIssue<Fields, WorkItemTypeValue>;\ntype IssueWorkItem = YTIssueWorkItem<WorkItemTypeValue>;"
-
-    // Type aliases for YouTrack entity types to make usage cleaner
-    const typeAliases = [
-      "type YTIssue<F, W> = entities.Issue<F, W>;",
-      "type YTIssueWorkItem<W> = entities.IssueWorkItem<W>;",
-      "type YTSet<T> = entities.Set<T>;",
-      "type User = entities.User;",
-      "type OwnedField = entities.OwnedField;",
-      "type EnumField<T> = entities.EnumField<T>;",
-      "type State<T> = entities.State<T>;",
-      "type ProjectVersion = entities.ProjectVersion;",
-      "type ProjectBuild = entities.ProjectBuild;",
-      "type Period = dateTime.Period;",
-    ].join("\n")
+      "\ntype Issue = entities.Issue<Fields, WorkItemTypeValue>;\ntype IssueWorkItem = entities.IssueWorkItem<WorkItemTypeValue>"
 
     // Compile the full type definition content
-    return `${imports}\n\n${typeAliases}\n${bundleTypesStr}\n${workItemType}\n\n${fieldsInterface}\n${issueTypes}\n`
+    return `${imports}\n\n${bundleTypesStr}\n${workItemType}\n\n${fieldsInterface}\n${issueTypes}\n`
   }
 }
