@@ -3,6 +3,17 @@
 
 The **youtrack-workflow-cli** package contains utilities that help you manage YouTrack workflows when you work in an external code editor. This lets you write and update workflows for YouTrack in JavaScript in your preferred development environment.
 
+## Features
+
+- **List Workflows**: View all available YouTrack workflows in your instance
+- **Pull Workflows**: Download and extract YouTrack workflow scripts to your local environment
+- **Push Workflows**: Upload local workflow scripts to your YouTrack instance
+- **Create Workflows**: Initialize new workflow projects with proper structure
+- **Generate Types**: Create TypeScript definitions for YouTrack project custom fields and work item types
+- **Secure Authentication**: Use permanent tokens for secure access to YouTrack API
+- **Environment Variables Support**: Configure via command line or environment variables
+- **TypeScript Support**: Full TypeScript type definitions for YouTrack scripting API
+
 ## Quick Start
 
 To work with the package, you need to install and run [Node.js](https://nodejs.org/en/). This also installs
@@ -115,6 +126,17 @@ Options:
 - `--force [strategy]` - synchronize workflows without checking status and with specified strategy (skip, pull, push)
 - `--watch` - watch for file changes and push changes to YouTrack
 - If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
+
+### Types
+
+```
+ytw types [project-id]
+```
+
+Generates TypeScript type definitions for a YouTrack project's custom fields and work item types. This helps maintain type safety when developing workflows for specific projects.
+
+Options:
+- If no project ID is provided, it will prompt you to select from available projects in YouTrack.
 
 ### Status Symbols
 

@@ -3,11 +3,12 @@ import * as dotenv from "dotenv"
 
 import { removeCommand } from "./commands/remove.command"
 import { statusCommand } from "./commands/status.command"
+import { typesCommand } from "./commands/types.command"
 import { listCommand } from "./commands/list.command"
 import { pullCommand } from "./commands/pull.command"
 import { pushCommand } from "./commands/push.command"
-import { addCommand } from "./commands/add.command"
 import { syncCommand } from "./commands/sync.command"
+import { addCommand } from "./commands/add.command"
 import { SYNC_TYPE } from "./consts"
 
 dotenv.config()
@@ -92,6 +93,16 @@ program
   .option("--token [token]", "YouTrack token")
   .action(({ host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => 
     statusCommand({ host, token })
+  )
+
+program
+  .command("types")
+  .description("Add type definition for Youtrack project")
+  .argument("[projects...]", "Youtrack project short name")
+  .option("--host [host]", "YouTrack host")
+  .option("--token [token]", "YouTrack token")
+  .action((projects, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => 
+    typesCommand(projects, { host, token })
   )
 
 program.parse(process.argv)

@@ -37,3 +37,24 @@ export const printItemStatus = (item: string, status: ProgressStatus, message: s
   const { icon, color } = PROGRESS_STATUS_DATA[status]
   console.log(`${" ".repeat(shift)}${colorize(icon, color)} ${item}: ${colorize(message, color)}`)
 }
+
+/**
+ * Remove all spaces and "-" from the name
+ * @param input Input string
+ * @param capitalizeFirst Capitalize the first letter
+ * @param prefix Prefix to add if the string starts with a number
+ * @returns Normalized string
+ */
+export function normalize(input: string, capitalizeFirst = false, prefix = '_'): string {
+  const result = input
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((w, i) =>
+      i === 0 && !capitalizeFirst
+        ? w.toLowerCase()
+        : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    )
+    .join('');
+
+  return result ? (/\d/.test(result[0]) ? prefix + result : result) : prefix;
+}

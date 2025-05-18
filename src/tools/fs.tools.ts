@@ -158,3 +158,19 @@ export const writeLockFile = (data: LockFileData): void => {
 export const isManifestExists = (workflowName: string): boolean => {
   return fs.existsSync(path.join(getWorkflowPath(workflowName), "manifest.json"))
 }
+
+
+/**
+ * Write type definition file to disk
+ * @param projectName Project name
+ * @param content Type definition content
+ */
+export const writeTypeFile = async (projectName: string, content: string): Promise<void> => {
+  // Create the types directory if it doesn't exist
+  const typesDir = path.resolve(process.cwd(), 'types');
+  await fs.promises.mkdir(typesDir, { recursive: true });
+  
+  // Write the type definition file
+  const typeFilePath = path.resolve(typesDir, `${projectName.toLowerCase()}.d.ts`);
+  await fs.promises.writeFile(typeFilePath, content);
+}
