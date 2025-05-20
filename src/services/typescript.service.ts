@@ -133,6 +133,10 @@ export class TypeScriptService {
         } else {
           setterType = fieldType
         }
+        if (field.canBeEmpty) {
+          // Handle nullable fields
+          setterType += " | null"
+        }
         fieldLines.push(`  set ${fieldNameFormatted}(value: ${setterType});`)
       } else {
         // Format regular fields
@@ -141,7 +145,7 @@ export class TypeScriptService {
       }
     }
 
-    return `interface Fields {\n${fieldLines.join("\n")}\n}`
+    return `interface Fields extends Record<string, any> {\n${fieldLines.join("\n")}\n}`
   }
 
   private generateTypeDefinitionContent(
