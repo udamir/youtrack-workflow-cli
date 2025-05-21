@@ -93,7 +93,6 @@ export class ProjectService {
       throw new WorkflowNotFoundError(name)
     }
     const { files, ...rest } = localCache
-
     await this.youtrack.uploadWorkflow(name, files)
 
     this._lockData[name] = rest
@@ -193,7 +192,9 @@ export class ProjectService {
     }
     const { files, ...rest } = data
     await writeLocalWorkflowFiles(files, name)
+
     this._lockData[name] = rest
+    this.updateLockFile()
   }
 
   /**
