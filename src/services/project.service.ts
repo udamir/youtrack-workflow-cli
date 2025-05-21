@@ -95,8 +95,12 @@ export class ProjectService {
     const { files, ...rest } = localCache
     await this.youtrack.uploadWorkflow(name, files)
 
+    // Update lock file with local data
     this._lockData[name] = rest
     this.updateLockFile()
+
+    // Update server cache with the local data so it matches what was uploaded
+    this._serverCache[name] = localCache
   }
 
   /**
@@ -193,8 +197,12 @@ export class ProjectService {
     const { files, ...rest } = data
     await writeLocalWorkflowFiles(files, name)
 
+    // Update lock file with server data
     this._lockData[name] = rest
     this.updateLockFile()
+    
+    // Update local cache with server data so it matches what was downloaded
+    this._localCache[name] = data
   }
 
   /**

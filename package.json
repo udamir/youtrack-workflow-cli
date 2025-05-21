@@ -1,6 +1,6 @@
 {
   "name": "youtrack-workflow-cli",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Youtrack workflow CLI",
   "repository": {
     "type": "git",
