@@ -141,10 +141,10 @@ export const syncCommand = async (
 
       const ruleName = filename.replace(".js", "")
 
-      // const spinner = ora({
-      //   text: `${workflowName}: ...\nSyncing workflow`,
-      //   color: "blue",
-      // }).start()
+      const spinner = ora({
+        text: `${workflowName}: ...\nSyncing workflow`,
+        color: "blue",
+      }).start()
 
       try {
         await projectService.updateSyncedWorkflow(
@@ -153,14 +153,14 @@ export const syncCommand = async (
           eventType === WATCH_EVENT.UNLINK ? filename : [],
           eventType === WATCH_EVENT.CHANGE ? filename : [],
           (workflowName, fileName, status) => {
-            // spinner.stop()
+            spinner.stop()
             if (status === SYNC_STATUS.PUSHED) {
               printItemStatus(`${workflowName}/${ruleName}`, PROGRESS_STATUS.SUCCESS, `"${eventType}" synced`)
             }
           }
         )
       } catch (error) {
-        // spinner.stop()
+        spinner.stop()
         printItemStatus(`${workflowName}/${ruleName}`, PROGRESS_STATUS.FAILED, error instanceof Error ? error.message : "Unknown error")
       }
 
