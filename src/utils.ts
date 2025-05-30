@@ -1,5 +1,5 @@
-import { COLORS, PROGRESS_STATUS, PROGRESS_STATUS_DATA } from "./consts"
-import type { ProgressStatus, ActionResult } from "./types"
+import { COLORS, PROGRESS_STATUS, PROGRESS_STATUS_DATA, WORKFLOW_STATUS } from "./consts"
+import type { ProgressStatus, ActionResult, WorkflowStatus } from "./types"
 
 /**
  * Returns an action result with a success status
@@ -24,17 +24,20 @@ export const errorStatus = (message: string): ActionResult => ({ status: "error"
 
 /**
  * Returns the progress status based on the action result
- * @param actionResult Action result to get progress status from
+ * @param status Action result status or workflow status to get progress status from
  * @returns Progress status
  */
-export const progressStatus = (actionResult: ActionResult): ProgressStatus => {
-  switch (actionResult.status) {
-    case "skipped":
-      return PROGRESS_STATUS.WARNING
+export const progressStatus = (status: ActionResult["status"] | WorkflowStatus): ProgressStatus => {
+  switch (status) {
+    case "error":
+    case WORKFLOW_STATUS.CONFLICT:
+      return PROGRESS_STATUS.FAILED
     case "success":
+    case WORKFLOW_STATUS.SYNCED:
+    case WORKFLOW_STATUS.NEW:
       return PROGRESS_STATUS.SUCCESS
     default:
-      return PROGRESS_STATUS.FAILED
+      return PROGRESS_STATUS.WARNING
   }
 }
 

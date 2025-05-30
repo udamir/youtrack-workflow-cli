@@ -31,12 +31,12 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
       }
 
       // Show prompt to select workflows
-      const selected = await inquirer.prompt([
+      const selected = await inquirer.prompt<{ workflows: string[] }>([
         {
           type: "checkbox",
           name: "workflows",
           message: "Select workflows to add:",
-          choices: notAddedWorkflows,
+          choices: notAddedWorkflows.map((w) => w.name),
         },
       ])
 
@@ -67,7 +67,7 @@ export const addCommand = async (workflows: string[] = [], { host = "", token = 
     // Stop spinner to print status line
     spinner.stop()
 
-    printItemStatus(workflow, progressStatus(result), result.message)
+    printItemStatus(workflow, progressStatus(result.status), result.message)
 
     counter.inc(result.status)
   }

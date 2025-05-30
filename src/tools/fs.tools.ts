@@ -71,6 +71,18 @@ export const readLocalWorkflowFiles = async (workflowName: string): Promise<Work
 }
 
 /**
+ * Read a specific workflow file from a directory
+ * @param workflowName Workflow name
+ * @param fileName File name
+ * @returns File content in string
+ */
+export const readLocalWorkflowFile = async (workflowName: string, fileName: string): Promise<string> => {
+  const sourcePath = getWorkflowPath(workflowName)
+  const fullPath = path.join(sourcePath, fileName)
+  return fs.promises.readFile(fullPath, "utf-8")
+}
+
+/**
  * Delete workflow files from a directory
  * @param workflowName Workflow name
  */

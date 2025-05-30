@@ -26,7 +26,7 @@ export const listCommand = async ({ host = "", token = "" } = {}): Promise<void>
 
     console.log(colorize("Available workflows:", COLORS.STYLE.BRIGHT))
     for (const workflow of workflows) {
-      console.log(`${colorize("•", COLORS.FG.CYAN)} ${workflow}`)
+      console.log(`${colorize("•", COLORS.FG.CYAN)} ${workflow.name}`)
     }
 
     console.log(`\n${colorize(`Total: ${workflows.length} workflows`, COLORS.FG.GREEN)}`)

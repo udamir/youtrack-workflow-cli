@@ -5,9 +5,10 @@ import { YouTrackApiError } from "../errors"
 /**
  * YouTrack workflow entity type
  */
-type WorkflowEntity = {
+export type WorkflowEntity = {
   id: string
   name: string
+  rules: WorkflowRuleEntity[]
 }
 
 type ProjectEntity = {
@@ -40,6 +41,23 @@ type CustomFieldBundleEntity = {
 type WorkflowItemEntity = {
   id: string
   name: string
+}
+
+export interface RuleLog {
+  id: string
+  level: string
+  message: string
+  presentation: string
+  stacktrace: string
+  timestamp: number
+  username: string
+}
+
+export interface WorkflowRuleEntity {
+  $type: string
+  id: string
+  name: string
+  title: string | null
 }
 
 export type CustomFieldInfo = {
@@ -104,12 +122,14 @@ export class YoutrackService {
 
   /**
    * Fetch all workflows from YouTrack
-   * @returns Array of workflow names
+   * @returns Array of workflow entities
    */
-  public async fetchWorkflows(): Promise<string[]> {
+  public async fetchWorkflows(): Promise<WorkflowEntity[]> {
     try {
-      const data = await this.fetch<WorkflowEntity[]>("/api/admin/workflows?fields=id,name&$top=-1")
-      return data.map(({ name }) => name)
+      const data = await this.fetch<WorkflowEntity[]>(
+        "/api/admin/workflows?fields=id,name,rules(id,name,title)&$top=-1&query=language:JS,mps",
+      )
+      return data
     } catch (error) {
       if (error instanceof YouTrackApiError) {
         throw error
@@ -289,6 +309,118 @@ export class YoutrackService {
       }
       throw new YouTrackApiError(
         `Cannot fetch work item types for project '${projectId}' from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
+    }
+  }
+
+  /**
+   * Get workflow logs
+   * @param workflowId Workflow ID
+   * @param ruleId Rule ID
+   * @param fromTimestamp Timestamp to filter logs from
+   * @returns Array of rule logs
+   */
+  public async getWorkflowLogs(workflowId: string, ruleId: string, fromTimestamp: number): Promise<RuleLog[]> {
+    try {
+      return this.fetch<RuleLog[]>(
+        `/api/admin/workflows/${workflowId}/rules/${ruleId}/logs?$top=-1&fields=id,level,message,presentation,stacktrace,timestamp,username&query=${fromTimestamp}`,
+      )
+    } catch (error) {
+      if (error instanceof YouTrackApiError) {
+        throw error
+      }
+      throw new YouTrackApiError(
+        `Cannot fetch logs for workflow rule '${ruleId}' in workflow '${workflowId}' from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
+    }
+  }
+
+  /**
+   * Update workflow rule
+   * @param workflowId Workflow ID
+   * @param ruleId Rule ID
+   * @param content Content of the workflow rule
+   * @returns True if successful
+   */
+  public async updateWorkflowRule(workflowId: string, ruleId: string, content: string): Promise<boolean> {
+    try {
+      await this.fetch(
+        `/api/admin/workflows/${workflowId}/rules/${ruleId}/?$top=-1&fields=description,id,name,script,title,type&query=language:JS,visual,mps`,
+        "json",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: ruleId, script: content }),
+        },
+      )
+      return true
+    } catch (error) {
+      if (error instanceof YouTrackApiError) {
+        throw error
+      }
+      throw new YouTrackApiError(
+        `Cannot save workflow rule '${ruleId}' in workflow '${workflowId}' from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
+    }
+  }
+
+  /**
+   * Create workflow rule
+   * @param workflowId Workflow ID
+   * @param name Rule name
+   * @param content Content of the workflow rule
+   * @returns True if successful
+   */
+  public async createWorkflowRule(workflowId: string, name: string, content: string): Promise<boolean> {
+    try {
+      await this.fetch(
+        `/api/admin/workflows/${workflowId}/rules?$top=-1&fields=description,id,name,script,title,type&query=language:JS,visual,mps`,
+        "json",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json;charset=utf-8" },
+          body: JSON.stringify({ name, script: content, type: "StatelessRule" }),
+        },
+      )
+      return true
+    } catch (error) {
+      if (error instanceof YouTrackApiError) {
+        throw error
+      }
+      throw new YouTrackApiError(
+        `Cannot create workflow rule '${name}' in workflow '${workflowId}' from '${this.host}'`,
+        500,
+        error instanceof Error ? error.message : "Unknown error",
+      )
+    }
+  }
+
+  /**
+   * Delete workflow rule
+   * @param workflowId Workflow ID
+   * @param ruleId Rule ID
+   * @returns True if successful
+   */
+  public async deleteWorkflowRule(workflowId: string, ruleId: string): Promise<boolean> {
+    try {
+      await this.fetch(
+        `/api/admin/workflows/${workflowId}/rules/${ruleId}/?$top=-1&fields=description,id,name,script,title,type&query=language:JS,visual,mps`,
+        "json",
+        { method: "DELETE" },
+      )
+      return true
+    } catch (error) {
+      if (error instanceof YouTrackApiError) {
+        throw error
+      }
+      throw new YouTrackApiError(
+        `Cannot delete workflow rule '${ruleId}' in workflow '${workflowId}' from '${this.host}'`,
         500,
         error instanceof Error ? error.message : "Unknown error",
       )

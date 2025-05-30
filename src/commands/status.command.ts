@@ -1,8 +1,7 @@
 import ora from "ora"
 
 import { PROGRESS_STATUS, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../consts"
-import { isError, printItemStatus, StatusCounter } from "../utils"
-import type { ProgressStatus, WorkflowStatus } from "../types"
+import { isError, printItemStatus, progressStatus, StatusCounter } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
 import { isManifestExists } from "../tools/fs.tools"
 
@@ -25,7 +24,7 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
   // Get project workflows
   const serverWorkflows = await youtrackService.fetchWorkflows()
 
-  const workflows = serverWorkflows.filter(isManifestExists)
+  const workflows = serverWorkflows.filter((w) => isManifestExists(w.name))
 
   if (workflows.length === 0) {
     console.log("No workflows found")
@@ -35,36 +34,24 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
   // Process workflows and track progress
   const counter = new StatusCounter()
 
-  const progressStatus = (status: WorkflowStatus): ProgressStatus => {
-    switch (status) {
-      case WORKFLOW_STATUS.SYNCED:
-      case WORKFLOW_STATUS.NEW:
-        return PROGRESS_STATUS.SUCCESS
-      case WORKFLOW_STATUS.CONFLICT:
-        return PROGRESS_STATUS.FAILED
-      default:
-        return PROGRESS_STATUS.WARNING
-    }
-  }
-
   for (const workflow of workflows) {
     // Create spinner for tracking progress
     const spinner = ora({
-      text: `${workflow}: ...\nChecking workflow status (${counter.total}/${workflows.length})`,
+      text: `${workflow.name}: ...\nChecking workflow status (${counter.total}/${workflows.length})`,
       color: "blue",
     }).start()
 
     try {
       // Get workflow status
-      const status = await projectService.workflowStatus(workflow)
+      const status = await projectService.workflowStatus(workflow.name)
       counter.inc(status)
 
-      const fileStatus = status === WORKFLOW_STATUS.CONFLICT ? await projectService.getWorkflowFileStatus(workflow) : {}
+      const fileStatus = status === WORKFLOW_STATUS.CONFLICT ? await projectService.getWorkflowFileStatus(workflow.name) : {}
 
       // Stop spinner to print status line
       spinner.stop()
 
-      printItemStatus(workflow, progressStatus(status), WORKFLOW_STATUS_DATA[status].description)
+      printItemStatus(workflow.name, progressStatus(status), WORKFLOW_STATUS_DATA[status].description)
       Object.entries(fileStatus).forEach(([file, status]) => {
         if (status !== WORKFLOW_STATUS.SYNCED) {
           printItemStatus(file, progressStatus(status), WORKFLOW_STATUS_DATA[status].description, 3)
@@ -74,7 +61,7 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
       // Failed to check workflow status
       counter.inc(WORKFLOW_STATUS.UNKNOWN)
       spinner.stop()
-      printItemStatus(workflow, PROGRESS_STATUS.FAILED, err instanceof Error ? err.message : "Error checking status")
+      printItemStatus(workflow.name, PROGRESS_STATUS.FAILED, err instanceof Error ? err.message : "Error checking status")
     }
   }
 

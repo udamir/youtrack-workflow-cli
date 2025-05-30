@@ -36,7 +36,7 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
           type: "checkbox",
           name: "workflows",
           message: "Select workflows to remove:",
-          choices: projectWorkflows,
+          choices: projectWorkflows.map((w) => w.name),
         },
       ])
 
@@ -68,7 +68,7 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
     // Stop spinner to print status line
     spinner.stop()
 
-    printItemStatus(workflow, progressStatus(result), result.message)
+    printItemStatus(workflow, progressStatus(result.status), result.message)
 
     counter.inc(result.status)
   }

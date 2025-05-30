@@ -77,7 +77,7 @@ export const pushCommand = async (
     workflowsToProcess = workflows
   } else {
     // Case: No arguments and force - push all project workflows
-    workflowsToProcess = projectWorkflows
+    workflowsToProcess = projectWorkflows.map((w) => w.name)
   }
 
   // Process workflows and track progress

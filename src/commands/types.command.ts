@@ -88,7 +88,7 @@ export const typesCommand = async (projects: string[] = [], { host = "", token =
     // Stop spinner to print status line
     spinner.stop()
 
-    printItemStatus(shortName, progressStatus(result), result.message)
+    printItemStatus(shortName, progressStatus(result.status), result.message)
 
     counter.inc(result.status)
   }

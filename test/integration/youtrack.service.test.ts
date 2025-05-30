@@ -54,7 +54,7 @@ describe("YoutrackService Integration", () => {
       console.log(`Using existing workflow: ${existingWorkflow} for test`)
 
       // Fetch workflow files from YouTrack
-      const workflowFiles = await service.fetchWorkflow(existingWorkflow)
+      const workflowFiles = await service.fetchWorkflow(existingWorkflow.name)
       expect(workflowFiles).toBeDefined()
       expect(Array.isArray(workflowFiles)).toBe(true)
       expect(workflowFiles?.length).toBeGreaterThan(0)
@@ -118,7 +118,7 @@ describe("YoutrackService Integration", () => {
 
       try {
         // Fetch workflow files from YouTrack
-        const workflowFiles = await service.fetchWorkflow(existingWorkflow)
+        const workflowFiles = await service.fetchWorkflow(existingWorkflow.name)
 
         // Verify workflow files were fetched successfully
         expect(workflowFiles).toBeDefined()

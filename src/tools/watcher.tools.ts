@@ -6,7 +6,7 @@ import { WATCH_EVENT } from "../consts"
 
 export const watchWorkflows = async (
   workflows: string[],
-  onChange: (workflow: string, eventType: WatchEvent) => void,
+  onChange: (workflow: string, filename: string, eventType: WatchEvent) => void,
 ): Promise<() => void> => {
   return new Promise((resolve, reject) => {
     if (!workflows.length) {
@@ -27,9 +27,9 @@ export const watchWorkflows = async (
     })
 
     watcher
-      .on("add", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT.ADD))
-      .on("change", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT.CHANGE))
-      .on("unlink", (filePath: string) => onChange(path.dirname(filePath), WATCH_EVENT.UNLINK))
+      .on("add", (filePath: string) => onChange(path.dirname(filePath), path.basename(filePath), WATCH_EVENT.ADD))
+      .on("change", (filePath: string) => onChange(path.dirname(filePath), path.basename(filePath), WATCH_EVENT.CHANGE))
+      .on("unlink", (filePath: string) => onChange(path.dirname(filePath), path.basename(filePath), WATCH_EVENT.UNLINK))
       .on("ready", () => resolve(() => watcher.close()))
       .on("error", reject)
   })

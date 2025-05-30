@@ -77,7 +77,7 @@ export const pullCommand = async (
     workflowsToProcess = workflows
   } else {
     // Case: No arguments and force - pull all project workflows
-    workflowsToProcess = projectWorkflows
+    workflowsToProcess = projectWorkflows.map((w) => w.name)
   }
 
   // Process workflows and track progress
