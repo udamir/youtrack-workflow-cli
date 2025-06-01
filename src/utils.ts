@@ -53,6 +53,10 @@ export const colorize = (text: string, fgColor: string, style?: string): string 
   return `${prefix}${text}${COLORS.RESET}`
 }
 
+export const colorizeIcon = ({ icon, color }: { icon: string; color: string }): string => {
+  return `${color}${icon}${COLORS.RESET}`
+}
+
 /**
  * Check if a condition is an error and log a message
  * @param condition Condition to check
@@ -74,8 +78,8 @@ export const isError = (condition: unknown, message: string): boolean => {
  * @param message Message to display
  */
 export const printItemStatus = (item: string, status: ProgressStatus, message: string, shift = 0) => {
-  const { icon, color } = PROGRESS_STATUS_DATA[status]
-  console.log(`${" ".repeat(shift)}${colorize(icon, color)} ${item}: ${colorize(message, color)}`)
+  const statusData = PROGRESS_STATUS_DATA[status]
+  console.log(`${" ".repeat(shift)}${colorizeIcon(statusData)} ${item}: ${colorize(message, statusData.color)}`)
 }
 
 /**

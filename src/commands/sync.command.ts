@@ -1,11 +1,14 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WATCH_EVENT, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../consts"
-import { isError, printItemStatus, progressStatus, StatusCounter } from "../utils"
-import type { SyncStatus, SyncType, WatchEvent } from "../types"
+import { PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
+import { isError, printItemStatus, StatusCounter } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
-import { watchWorkflows } from "../tools/watcher.tools"
+import { LintingService } from "../services/linting.service"
+import { WatchService } from "../services/watch.service"
+import { printWorkflowStatus } from "./status.command"
+import type { SyncStatus, SyncType } from "../types"
+import { printLintResult, printLintSummary } from "./lint.command"
 
 type SyncCommandOptions = {
   host?: string
@@ -13,6 +16,9 @@ type SyncCommandOptions = {
   watch?: SyncType
   force?: SyncType
   debounce?: number
+  lint?: boolean
+  typeCheck?: boolean
+  maxWarnings?: number
 }
 
 /**
@@ -21,7 +27,7 @@ type SyncCommandOptions = {
  */
 export const syncCommand = async (
   workflows: string[] = [],
-  { host = "", token = "", watch, force }: SyncCommandOptions = {},
+  { host = "", token = "", watch, force, lint, typeCheck, maxWarnings }: SyncCommandOptions = {},
 ): Promise<void> => {
   // Validate required parameters
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
@@ -34,6 +40,13 @@ export const syncCommand = async (
   // Create services
   const youtrackService = new YoutrackService(host, token)
   const projectService = new ProjectService(youtrackService)
+
+  // Initialize linting service with configuration from package.json
+  const lintingService = new LintingService({
+    enableEslint: lint,
+    enableTypeCheck: typeCheck,
+    maxWarnings,
+  })
 
   const workflowsToWatch = await projectService.projectWorkflows(workflows)
 
@@ -49,7 +62,7 @@ export const syncCommand = async (
       case SYNC_STATUS.FAILED:
         return printItemStatus(workflow, PROGRESS_STATUS.FAILED, "Failed to sync")
       case SYNC_STATUS.SYNCED:
-        return printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Synced")
+        return printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Already in sync")
     }
   }
 
@@ -72,12 +85,7 @@ export const syncCommand = async (
       const fileStatus = await projectService.getWorkflowFileStatus(workflow)
 
       spinner.stop()
-      printItemStatus(workflow, PROGRESS_STATUS.FAILED, "Conflict")
-      Object.entries(fileStatus).forEach(([file, status]) => {
-        if (status !== WORKFLOW_STATUS.SYNCED) {
-          printItemStatus(file, progressStatus(status), WORKFLOW_STATUS_DATA[status].description, 3)
-        }
-      })
+      printWorkflowStatus(workflow, WORKFLOW_STATUS.CONFLICT, fileStatus)
 
       if (force) {
         return force
@@ -115,72 +123,37 @@ export const syncCommand = async (
       return
     }
 
-    const workflowMap = new Map(workflowsToWatch.map((w) => [w.name, w]))
+    // Create watch service with event handlers
+    const watchService = new WatchService(projectService, lintingService, {
+      // Display file change events
+      onFileChange: (workflowName, filename, eventType) => {
+        const checkNeeded = lintingService.config.enableEslint || lintingService.config.enableTypeCheck
+        printItemStatus(`${workflowName}/${filename}`, PROGRESS_STATUS.INFO, `${eventType} detected${checkNeeded ? ". Checking workflow:" : ""}`)
+      },
 
-    console.log("\nStarting watch mode. Press Ctrl+C to exit.")
-    let syncing = false
-    let debounced: NodeJS.Timeout | null = null
+      // Display linting results
+      onLintResult: (workflowName, errors, warnings) => {
+        printLintSummary(workflowName, errors, warnings)
+        printLintResult(errors, warnings)
+      },
 
-    const syncWorkflow = async (workflowName: string, filename: string, eventType: WatchEvent) => {
-      if (syncing && !debounced) {
-        debounced = setTimeout(() => syncWorkflow(workflowName, filename, eventType), 1000)
-        return
-      }
-      syncing = true
+      // Display sync results
+      onSyncResult: (workflowName, status, message) => {
+        const statusType =
+          status === SYNC_STATUS.PUSHED
+            ? PROGRESS_STATUS.SUCCESS
+            : status === SYNC_STATUS.FAILED
+              ? PROGRESS_STATUS.FAILED
+              : PROGRESS_STATUS.INFO
 
-      const workflow = workflowMap.get(workflowName)
-      if (!workflow) {
-        console.log(`Workflow ${workflowName} not found`)
-        return
-      }
-
-      if (!filename.endsWith(".js")) {
-        console.log(`File ${filename} is skipped - it is not a JavaScript file`)
-        return
-      }
-
-      const ruleName = filename.replace(".js", "")
-
-      const spinner = ora({
-        text: `${workflowName}: ...\nSyncing workflow`,
-        color: "blue",
-      }).start()
-
-      try {
-        await projectService.updateSyncedWorkflow(
-          workflow,
-          eventType === WATCH_EVENT.ADD ? filename : [],
-          eventType === WATCH_EVENT.UNLINK ? filename : [],
-          eventType === WATCH_EVENT.CHANGE ? filename : [],
-          (workflowName, fileName, status) => {
-            spinner.stop()
-            if (status === SYNC_STATUS.PUSHED) {
-              printItemStatus(`${workflowName}/${ruleName}`, PROGRESS_STATUS.SUCCESS, `"${eventType}" synced`)
-            }
-          }
-        )
-      } catch (error) {
-        spinner.stop()
-        printItemStatus(`${workflowName}/${ruleName}`, PROGRESS_STATUS.FAILED, error instanceof Error ? error.message : "Unknown error")
-      }
-
-      syncing = false
-      if (debounced) {
-        clearTimeout(debounced)
-        debounced = null
-      }
-    }
-
-    const stop = await watchWorkflows(
-      workflowsToWatch.map(({ name }) => name),
-      syncWorkflow,
-    )
-
-    // Handle process termination
-    process.on("SIGINT", () => {
-      console.log("\nStopping watch mode...")
-      stop()
-      process.exit(0)
+        printItemStatus(`${workflowName}`, statusType, message || status)
+      },
     })
+
+    // Start watching
+    await watchService.startWatching(workflowsToWatch.map(({ name }) => name))
+
+    console.log("\nWatching for changes...")
+    console.log("Press Ctrl+C to exit.")
   }
 }

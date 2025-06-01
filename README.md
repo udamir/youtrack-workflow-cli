@@ -8,8 +8,11 @@ The **youtrack-workflow-cli** package contains utilities that help you manage Yo
 - **List Workflows**: View all available YouTrack workflows in your instance
 - **Pull Workflows**: Download and extract YouTrack workflow scripts to your local environment
 - **Push Workflows**: Upload local workflow scripts to your YouTrack instance
-- **Create Workflows**: Initialize new workflow projects with proper structure
+- **Lint Workflows**: Run linting checks on workflow files
 - **Generate Types**: Create TypeScript definitions for YouTrack project custom fields and work item types
+- **Type Check**: Run TypeScript type checking on workflow files
+- **Sync Workflows**: Synchronize workflows between local and YouTrack
+- **Sync with Watch mode**: Watch for file changes and push changes to YouTrack
 - **Secure Authentication**: Use permanent tokens for secure access to YouTrack API
 - **Environment Variables Support**: Configure via command line or environment variables
 - **TypeScript Support**: Full TypeScript type definitions for YouTrack scripting API
@@ -114,7 +117,7 @@ Checks the status of all workflows in your project and compares them with the ve
 ### Sync
 
 ```
-ytw sync [workflow-name...] [--force [strategy]] [--watch]
+ytw sync [workflow-name...] [--force [strategy]] [--watch] [--lint] [--type-check] [--max-warnings [number]]
 ```
 
 Synchronizes workflows between your local project and YouTrack. This command:
@@ -125,7 +128,22 @@ Synchronizes workflows between your local project and YouTrack. This command:
 Options:
 - `--force [strategy]` - synchronize workflows without checking status and with specified strategy (skip, pull, push)
 - `--watch` - watch for file changes and push changes to YouTrack
+- `--lint` - run linting checks on workflows
+- `--type-check` - run TypeScript type checking
+- `--max-warnings [number]` - maximum allowed warnings
 - If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
+
+### Lint
+
+```
+ytw lint [workflow-name...] [--type-check]
+```
+
+Runs linting checks on workflow files. This helps maintain code quality and catch potential errors early.
+
+Options:
+- `--type-check` - run TypeScript type checking
+- If no workflow names are provided, it will lint all workflows in your project.
 
 ### Types
 

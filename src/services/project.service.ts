@@ -6,14 +6,13 @@ import {
   isLocalWorkflow,
   deleteLocalWorkflowFiles,
   isManifestExists,
-  readLocalWorkflowFile,
 } from "../tools/fs.tools"
 import type { WorkflowFile, WorkflowStatus, WorkflowHash, SyncType, SyncStatus, ActionResult } from "../types"
-import { WorkflowError, WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
+import { WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
+import type { WorkflowEntity, YoutrackService } from "./youtrack.service"
 import { errorStatus, skippedStatus, successStatus } from "../utils"
 import { WORKFLOW_STATUS, SYNC_STATUS, SYNC_TYPE } from "../consts"
-import { calculateHash, calculateWorkflowHash } from "../tools/hash.tools"
-import type { WorkflowEntity, YoutrackService } from "./youtrack.service"
+import { calculateWorkflowHash } from "../tools/hash.tools"
 
 type WorkflowDataCache = {
   files: WorkflowFile[]
@@ -76,100 +75,6 @@ export class ProjectService {
     }
 
     return this._localCache[name]
-  }
-
-  /**
-   * Update a workflow that is already in sync
-   * @param workflowName Workflow name
-   * @param added Array or single string of new files added
-   * @param removed Array or single string of files removed
-   * @param updated Array or single string of files updated
-   */
-  public async updateSyncedWorkflow(
-    workflow: WorkflowEntity,
-    _added: string[] | string,
-    _removed: string[] | string,
-    _updated: string[] | string,
-    onSync?: (workflow: string, fileName: string, syncStatus: SyncStatus) => void,
-  ) {
-    const added = Array.isArray(_added) ? _added : [_added]
-    const removed = Array.isArray(_removed) ? _removed : [_removed]
-    const updated = Array.isArray(_updated) ? _updated : [_updated]
-
-    const localCache = this._localCache[workflow.name]
-    const serverCache = this._serverCache[workflow.name]
-
-    if (!localCache || !serverCache || localCache.hash !== serverCache.hash) {
-      throw new WorkflowError("Workflow should be in sync")
-    }
-
-    for (const fileName of added) {
-      if (localCache.files.find((f) => f.name === fileName)) {
-        // file already exists
-        continue
-      }
-
-      const content = await readLocalWorkflowFile(workflow.name, fileName)
-      const file = Buffer.from(content)
-
-      await this.youtrack.createWorkflowRule(workflow.id, fileName.replace(".js", ""), content)
-
-      // calculate content hash
-      localCache.files.push({ name: fileName, file })
-      serverCache.files.push({ name: fileName, file })
-
-      onSync?.(workflow.name, fileName, SYNC_STATUS.PUSHED)
-    }
-
-    for (const fileName of removed) {
-      const rule = workflow.rules.find((r) => `${r.name}.js` === fileName)
-      const localIndex = localCache.files.findIndex((f) => f.name === fileName)
-      if (!rule || localIndex === -1) {
-        // file not found
-        continue
-      }
-
-      await this.youtrack.deleteWorkflowRule(workflow.id, rule.id)
-
-      // remove file from cache
-      localCache.files.splice(localIndex, 1)
-      serverCache.files.splice(localIndex, 1)
-
-      onSync?.(workflow.name, fileName, SYNC_STATUS.PUSHED)
-    }
-
-    for (const fileName of updated) {
-      const rule = workflow.rules.find((r) => `${r.name}.js` === fileName)
-      const localIndex = localCache.files.findIndex((f) => f.name === fileName)
-      if (!rule || localIndex === -1) {
-        // file not found
-        continue
-      }
-
-      const content = await readLocalWorkflowFile(workflow.name, fileName)
-      const file = Buffer.from(content)
-
-      await this.youtrack.updateWorkflowRule(workflow.id, rule.id, content)
-
-      // calculate content hash
-      localCache.files[localIndex].file = file
-      serverCache.files[localIndex].file = file
-
-      onSync?.(workflow.name, fileName, SYNC_STATUS.PUSHED)
-    }
-
-    const { hash, fileHashes } = calculateWorkflowHash(localCache.files)
-
-    localCache.hash = hash
-    localCache.fileHashes = fileHashes
-    serverCache.hash = hash
-    serverCache.fileHashes = fileHashes
-
-    this._lockData[workflow.name] = {
-      hash: localCache.hash,
-      fileHashes: localCache.fileHashes,
-    }
-    this.updateLockFile()
   }
 
   /**

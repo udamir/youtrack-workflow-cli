@@ -8,7 +8,9 @@ import { listCommand } from "./commands/list.command"
 import { pullCommand } from "./commands/pull.command"
 import { pushCommand } from "./commands/push.command"
 import { syncCommand } from "./commands/sync.command"
+import { lintCommand } from "./commands/lint.command"
 import { addCommand } from "./commands/add.command"
+import { readPackageJson } from "./tools/fs.tools"
 import { SYNC_TYPE } from "./consts"
 
 dotenv.config()
@@ -21,7 +23,7 @@ const { YOUTRACK_BASE_URL = "", YOUTRACK_TOKEN = "" } = process.env
 program
   .name("ytw")
   .description("YouTrack Workflow CLI - Manage YouTrack workflows")
-  .version(process.env.npm_package_version || "0.0.1")
+  .version(readPackageJson()?.version || "Unknown")
 
 program
   .command("list")
@@ -62,8 +64,11 @@ program
   .option("--token [token]", "YouTrack token")
   .option("--watch", "Watch for file changes and push changes to YouTrack")
   .option("--force [strategy]", "Force conflict resolution without prompting with specified strategy (skip, pull, push)", SYNC_TYPE.SKIP)
-  .action((workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, watch, force }) => 
-    syncCommand(workflows, { host, token, watch, force })
+  .option("--lint", "Linting validation before pushing changes to YouTrack")
+  .option("--type-check", "Run TypeScript type checking")
+  .option("--max-warnings [number]", "Maximum allowed warnings", Number.parseInt, 10)
+  .action((workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, watch, force, lint, typeCheck, maxWarnings }) => 
+    syncCommand(workflows, { host, token, watch, force, lint, typeCheck, maxWarnings })
   )
 
 program
@@ -104,5 +109,12 @@ program
   .action((projects, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => 
     typesCommand(projects, { host, token })
   )
+
+program
+  .command("lint")
+  .description("Run linting checks on workflow files")
+  .argument("[workflow...]", "Workflow name")
+  .option("--type-check", "Run TypeScript type checking")
+  .action((workflow, { typeCheck }) => lintCommand(workflow, { typeCheck }))
 
 program.parse(process.argv)

@@ -4,6 +4,7 @@ import { PROGRESS_STATUS, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../const
 import { isError, printItemStatus, progressStatus, StatusCounter } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
 import { isManifestExists } from "../tools/fs.tools"
+import type { WorkflowStatus } from "../types"
 
 /**
  * Command to check the status of workflows in a project
@@ -46,22 +47,22 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
       const status = await projectService.workflowStatus(workflow.name)
       counter.inc(status)
 
-      const fileStatus = status === WORKFLOW_STATUS.CONFLICT ? await projectService.getWorkflowFileStatus(workflow.name) : {}
+      const fileStatus =
+        status === WORKFLOW_STATUS.CONFLICT ? await projectService.getWorkflowFileStatus(workflow.name) : {}
 
       // Stop spinner to print status line
       spinner.stop()
 
-      printItemStatus(workflow.name, progressStatus(status), WORKFLOW_STATUS_DATA[status].description)
-      Object.entries(fileStatus).forEach(([file, status]) => {
-        if (status !== WORKFLOW_STATUS.SYNCED) {
-          printItemStatus(file, progressStatus(status), WORKFLOW_STATUS_DATA[status].description, 3)
-        }
-      })
+      printWorkflowStatus(workflow.name, status, fileStatus)
     } catch (err) {
       // Failed to check workflow status
       counter.inc(WORKFLOW_STATUS.UNKNOWN)
       spinner.stop()
-      printItemStatus(workflow.name, PROGRESS_STATUS.FAILED, err instanceof Error ? err.message : "Error checking status")
+      printItemStatus(
+        workflow.name,
+        PROGRESS_STATUS.FAILED,
+        err instanceof Error ? err.message : "Error checking status",
+      )
     }
   }
 
@@ -84,4 +85,17 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
     const summary = summaryParts.join(", ")
     console.log(`Workflows: ${summary}`)
   }
+}
+
+export const printWorkflowStatus = (
+  workflowName: string,
+  status: WorkflowStatus,
+  fileStatus: Record<string, WorkflowStatus> = {},
+) => {
+  printItemStatus(workflowName, progressStatus(status), WORKFLOW_STATUS_DATA[status].description)
+  Object.entries(fileStatus).forEach(([file, status]) => {
+    if (status !== WORKFLOW_STATUS.SYNCED) {
+      printItemStatus(file, progressStatus(status), WORKFLOW_STATUS_DATA[status].description, 3)
+    }
+  })
 }

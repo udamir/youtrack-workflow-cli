@@ -1,7 +1,7 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-import type { LockFileData, WorkflowFile, WorkflowHash } from "../types"
+import type { LockFileData, WorkflowFile, WorkflowHash, YtwConfig } from "../types"
 import { calculateWorkflowHash } from "./hash.tools"
 import { LOCK_FILE_NAME } from "../consts"
 
@@ -20,6 +20,37 @@ export const getWorkflowPath = (workflowName: string): string => {
  */
 export const getLockFilePath = (): string => {
   return path.join(process.cwd(), LOCK_FILE_NAME)
+}
+
+/**
+ * Check if a file exists
+ * @param fileName File name
+ * @returns True if the file exists, false otherwise
+ */
+export const fileExists = (fileName: string): boolean => {
+  return fs.existsSync(path.join(process.cwd(), fileName))
+}
+
+/**
+ * Check if a folder exists
+ * @param folderName Folder name
+ * @returns True if the folder exists, false otherwise
+ */
+export const folderExists = (folderName: string): boolean => {
+  return fs.existsSync(path.join(process.cwd(), folderName))
+}
+
+/**
+ * Read configuration from package.json
+ * @returns Configuration object
+ */
+export const readPackageJson = (): { version: string; ytw: YtwConfig } => {
+  const packageJsonPath = path.join(process.cwd(), 'package.json')
+  if (!fs.existsSync(packageJsonPath)) {
+    return { version: "", ytw: { linting: {} } }
+  }
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+  return { version: packageJson.version, ytw: packageJson.ytw ?? { linting: {} } }
 }
 
 /**
