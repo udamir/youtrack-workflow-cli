@@ -1,8 +1,8 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
-import { isError, printItemStatus, StatusCounter } from "../utils"
+import { COLORS, PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
+import { colorize, isError, printItemStatus, StatusCounter } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
 import { LintingService } from "../services/linting.service"
 import { WatchService } from "../services/watch.service"
@@ -112,6 +112,18 @@ export const syncCommand = async (
         )
       }
     },
+    async (workflow) => {
+      const { errors, warnings } = await lintingService.lintWorkflow(workflow)
+      spinner.stop()
+      if (errors.length) {
+        printLintSummary(`${workflow}: ${colorize("sync failed", COLORS.FG.RED)}`, errors, warnings)
+        statuses.inc(SYNC_STATUS.FAILED)
+      } else {
+        printLintSummary(workflow, errors, warnings)
+      }
+      printLintResult(errors, warnings)
+      return !errors.length
+    },
   )
 
   spinner.stop()
@@ -119,7 +131,7 @@ export const syncCommand = async (
   // Set up watch mode if requested
   if (watch) {
     if (statuses.get(SYNC_STATUS.FAILED) + statuses.get(SYNC_STATUS.SKIPPED) > 0) {
-      console.log("\nCannot start watch mode with failed or skipped workflows. Resolve conflicts first.")
+      console.log("\nCannot start watch mode with failed or skipped workflows. Resolve conflicts/errors first.")
       return
     }
 

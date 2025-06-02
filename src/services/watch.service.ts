@@ -100,7 +100,7 @@ export class WatchService {
     }
 
     try {
-      await this.projectService.uploadWorkflow(workflowName)
+      await this.projectService.uploadWorkflow(workflowName, true)
       this.eventHandlers.onSyncResult?.(workflowName, SYNC_STATUS.PUSHED, "Workflow uploaded successfully")
     } catch (error) {
       this.eventHandlers.onSyncResult?.(

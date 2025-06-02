@@ -83,9 +83,13 @@ export class ProjectService {
    * @throws {WorkflowNotInProjectError} If the workflow doesn't exist in the project
    * @throws {WorkflowNotFoundError} If the workflow files don't exist
    */
-  public async uploadWorkflow(name: string) {
+  public async uploadWorkflow(name: string, clearLocalCache = false) {
     if (!isLocalWorkflow(name)) {
       throw new WorkflowNotInProjectError(name)
+    }
+
+    if (clearLocalCache) {
+      delete this._localCache[name]
     }
 
     const localCache = await this.cacheLocalWorkflow(name)
@@ -143,6 +147,7 @@ export class ProjectService {
     workflows: string[],
     onConflict?: (workflow: string) => Promise<SyncType>,
     onSync?: (workflow: string, syncStatus: SyncStatus, index: number) => void,
+    preUploadCheck?: (workflow: string) => Promise<boolean>,
   ) {
     let index = 0
 
@@ -168,6 +173,10 @@ export class ProjectService {
         if (status !== WORKFLOW_STATUS.SYNCED) {
           syncType = await getSyncType(workflow, status)
           if (syncType === SYNC_TYPE.PUSH) {
+            if (preUploadCheck) {
+              const allowed = await preUploadCheck(workflow)
+              if (!allowed) { continue }
+            }
             await this.uploadWorkflow(workflow)
             syncStatus = SYNC_STATUS.PUSHED
           } else if (syncType === SYNC_TYPE.PULL) {

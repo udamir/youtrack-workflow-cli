@@ -38,10 +38,7 @@ export class LintingService {
         results.errors.push(...eslintResult.errors)
         results.warnings.push(...eslintResult.warnings)
       } catch (error: any) {
-        // Don't fail if ESLint config doesn't exist
-        if (error instanceof Error && !error.message.includes("configuration not found")) {
-          throw error
-        }
+        results.errors.push(`${workflowName}: ESLint error: ${error.message}`)
       }
     }
 
@@ -102,7 +99,7 @@ export class LintingService {
       }, result)
     } catch (parseError: any) {
       return {
-        errors: [`${workflowName}: Error parsing ESLint output: ${parseError?.message || "Unknown error"}`],
+        errors: [`${workflowName}: Error parsing ESLint output: ${execResult || "Unknown error"}`],
         warnings: [],
       }
     }
@@ -122,11 +119,7 @@ export class LintingService {
       const output = execError.stdout?.toString() || execError.stderr?.toString() || ""
 
       // Split the output into lines and filter those referring to the target file
-      const lines = output.split("\n").filter(Boolean)
-      return {
-        errors: lines,
-        warnings: [],
-      }
+      return { errors: output.split("\n").filter(Boolean), warnings: [] }
     }
   }
 }
