@@ -1,5 +1,5 @@
 import { errorStatus, normalize, skippedStatus, successStatus } from "../utils"
-import type { YoutrackService } from "./youtrack.service"
+import type { YoutrackService } from "./youtrack"
 import { writeTypeFile } from "../tools/fs.tools"
 import type { ActionResult } from "../types"
 

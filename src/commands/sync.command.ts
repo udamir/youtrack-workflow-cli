@@ -2,13 +2,11 @@ import inquirer from "inquirer"
 import ora from "ora"
 
 import { COLORS, PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
+import { YoutrackService, ProjectService, LintingService, WatchService } from "../services"
 import { colorize, isError, printItemStatus, StatusCounter } from "../utils"
-import { YoutrackService, ProjectService } from "../services"
-import { LintingService } from "../services/linting.service"
-import { WatchService } from "../services/watch.service"
+import { printLintResult, printLintSummary } from "./lint.command"
 import { printWorkflowStatus } from "./status.command"
 import type { SyncStatus, SyncType } from "../types"
-import { printLintResult, printLintSummary } from "./lint.command"
 
 type SyncCommandOptions = {
   host?: string
@@ -140,7 +138,11 @@ export const syncCommand = async (
       // Display file change events
       onFileChange: (workflowName, filename, eventType) => {
         const checkNeeded = lintingService.config.enableEslint || lintingService.config.enableTypeCheck
-        printItemStatus(`${workflowName}/${filename}`, PROGRESS_STATUS.INFO, `${eventType} detected${checkNeeded ? ". Checking workflow:" : ""}`)
+        printItemStatus(
+          `${workflowName}/${filename}`,
+          PROGRESS_STATUS.INFO,
+          `${eventType} detected${checkNeeded ? ". Checking workflow:" : ""}`,
+        )
       },
 
       // Display linting results

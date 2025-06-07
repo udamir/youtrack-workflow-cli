@@ -14,6 +14,7 @@ export const COLORS = {
     MAGENTA: "\x1b[35m",
     CYAN: "\x1b[36m",
     WHITE: "\x1b[37m",
+    GRAY: "\x1b[90m",
   },
   // Styles
   STYLE: {
@@ -23,7 +24,17 @@ export const COLORS = {
     UNDERLINE: "\x1b[4m",
   },
   // Reset code
-  RESET: "\x1b[0m"
+  RESET: "\x1b[0m",
+} as const
+
+/**
+ * Log levels for workflow logs
+ */
+export const LEVELS = {
+  INFO: "INFO",
+  ERROR: "ERROR",
+  WARNING: "WARNING",
+  DEBUG: "DEBUG",
 } as const
 
 export const WORKFLOW_STATUS = {
@@ -40,37 +51,37 @@ export const WORKFLOW_STATUS_DATA = {
   [WORKFLOW_STATUS.SYNCED]: {
     icon: "✓",
     color: COLORS.FG.GREEN,
-    description: "Synced"
+    description: "Synced",
   },
   [WORKFLOW_STATUS.MODIFIED]: {
     icon: "↑",
     color: COLORS.FG.YELLOW,
-    description: "Modified locally"
+    description: "Modified locally",
   },
   [WORKFLOW_STATUS.OUTDATED]: {
     icon: "↓",
     color: COLORS.FG.BLUE,
-    description: "Outdated (server has newer version)"
+    description: "Outdated (server has newer version)",
   },
   [WORKFLOW_STATUS.CONFLICT]: {
     icon: "!",
     color: COLORS.FG.RED,
-    description: "Conflict"
+    description: "Conflict",
   },
   [WORKFLOW_STATUS.MISSING]: {
     icon: "?",
     color: COLORS.FG.MAGENTA,
-    description: "Missing locally"
+    description: "Missing locally",
   },
   [WORKFLOW_STATUS.NEW]: {
     icon: "+",
     color: COLORS.FG.CYAN,
-    description: "New (not on server)"
+    description: "New (not on server)",
   },
   [WORKFLOW_STATUS.UNKNOWN]: {
     icon: "-",
     color: COLORS.FG.WHITE,
-    description: "Unknown status"
+    description: "Unknown status",
   },
 } as const
 
@@ -78,25 +89,25 @@ export const PROGRESS_STATUS = {
   SUCCESS: "success",
   WARNING: "warning",
   FAILED: "failed",
-  INFO: "info"
+  INFO: "info",
 } as const
 
 export const PROGRESS_STATUS_DATA = {
   [PROGRESS_STATUS.SUCCESS]: {
-    icon: '✓',
+    icon: "✓",
     color: COLORS.FG.GREEN,
   },
   [PROGRESS_STATUS.WARNING]: {
-    icon: '⚠',
+    icon: "⚠",
     color: COLORS.FG.YELLOW,
   },
   [PROGRESS_STATUS.FAILED]: {
-    icon: '✗',
+    icon: "✗",
     color: COLORS.FG.RED,
   },
   [PROGRESS_STATUS.INFO]: {
     icon: "ℹ",
-    color: COLORS.FG.BLUE
+    color: COLORS.FG.BLUE,
   },
 } as const
 
@@ -109,7 +120,7 @@ export const SYNC_TYPE = {
 export const WATCH_EVENT = {
   ADD: "add",
   CHANGE: "change",
-  UNLINK: "unlink"
+  UNLINK: "unlink",
 } as const
 
 export const SYNC_STATUS = {
@@ -117,5 +128,5 @@ export const SYNC_STATUS = {
   PUSHED: "pushed",
   SKIPPED: "skipped",
   FAILED: "failed",
-  SYNCED: "synced"
+  SYNCED: "synced",
 } as const

@@ -1,4 +1,4 @@
-import { YoutrackService } from "../../src/services/youtrack.service"
+import { YoutrackService } from "../../src/services/youtrack"
 import { TestHelper } from "./test-helpers"
 import * as crypto from "node:crypto"
 import * as fs from "node:fs"

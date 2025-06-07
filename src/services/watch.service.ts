@@ -89,11 +89,7 @@ export class WatchService {
       const lintResult = await this.lintingService.lintWorkflow(workflowName)
       this.eventHandlers.onLintResult?.(workflowName, lintResult.errors, lintResult.warnings)
       if (lintResult.errors.length) {
-        this.eventHandlers.onSyncResult?.(
-          workflowName,
-          SYNC_STATUS.FAILED,
-          "Sync failed: errors found",
-        )
+        this.eventHandlers.onSyncResult?.(workflowName, SYNC_STATUS.FAILED, "Sync failed: errors found")
         this.syncing = false
         return
       }

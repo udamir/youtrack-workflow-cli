@@ -9,6 +9,7 @@ The **youtrack-workflow-cli** package contains utilities that help you manage Yo
 - **Pull Workflows**: Download and extract YouTrack workflow scripts to your local environment
 - **Push Workflows**: Upload local workflow scripts to your YouTrack instance
 - **Lint Workflows**: Run linting checks on workflow files
+- **Logs with Watch mode**: View logs for a workflow rules
 - **Generate Types**: Create TypeScript definitions for YouTrack project custom fields and work item types
 - **Type Check**: Run TypeScript type checking on workflow files
 - **Sync Workflows**: Synchronize workflows between local and YouTrack
@@ -144,6 +145,18 @@ Runs linting checks on workflow files. This helps maintain code quality and catc
 Options:
 - `--type-check` - run TypeScript type checking
 - If no workflow names are provided, it will lint all workflows in your project.
+
+### Logs
+
+```
+ytw logs [workflow-name...] [--watch]
+```
+
+View logs for a selected workflow rules. This helps you monitor the behavior of your workflows in real-time.
+
+Options:
+- `--watch` - watch for file changes and push changes to YouTrack
+- If no workflow names are provided, it will prompt you to select from available workflows in project.
 
 ### Types
 

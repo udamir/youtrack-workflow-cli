@@ -9,9 +9,9 @@ import {
 } from "../tools/fs.tools"
 import type { WorkflowFile, WorkflowStatus, WorkflowHash, SyncType, SyncStatus, ActionResult } from "../types"
 import { WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
-import type { WorkflowEntity, YoutrackService } from "./youtrack.service"
 import { errorStatus, skippedStatus, successStatus } from "../utils"
 import { WORKFLOW_STATUS, SYNC_STATUS, SYNC_TYPE } from "../consts"
+import type { WorkflowEntity, YoutrackService } from "./youtrack"
 import { calculateWorkflowHash } from "../tools/hash.tools"
 
 type WorkflowDataCache = {
@@ -175,7 +175,9 @@ export class ProjectService {
           if (syncType === SYNC_TYPE.PUSH) {
             if (preUploadCheck) {
               const allowed = await preUploadCheck(workflow)
-              if (!allowed) { continue }
+              if (!allowed) {
+                continue
+              }
             }
             await this.uploadWorkflow(workflow)
             syncStatus = SYNC_STATUS.PUSHED

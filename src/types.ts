@@ -1,4 +1,4 @@
-import type { PROGRESS_STATUS, WORKFLOW_STATUS, SYNC_TYPE, SYNC_STATUS, WATCH_EVENT } from "./consts"
+import type { PROGRESS_STATUS, WORKFLOW_STATUS, SYNC_TYPE, SYNC_STATUS, WATCH_EVENT, LEVELS } from "./consts"
 
 /**
  * Linting configuration options
@@ -70,4 +70,24 @@ export interface LintingResult {
   errors: string[]
   /** Array of warning messages */
   warnings: string[]
+}
+
+/**
+ * YouTrack workflow rule log entry
+ */
+export interface RuleLog {
+  /** Log entry ID */
+  id?: string
+  /** Log level (INFO, ERROR, WARNING, DEBUG) */
+  level?: string
+  /** Log message */
+  message?: string
+  /** Formatted presentation of the log */
+  presentation?: string
+  /** Error stack trace if available */
+  stacktrace?: string
+  /** Timestamp in milliseconds */
+  timestamp?: number
+  /** Username who triggered the log */
+  username?: string
 }

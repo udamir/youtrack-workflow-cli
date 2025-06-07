@@ -102,6 +102,28 @@ export function normalize(input: string, capitalizeFirst = false, prefix = "_"):
 }
 
 /**
+ * Format a date into a human-readable string
+ * @param date Date to format
+ * @param includeTime Whether to include time in the output
+ * @returns Formatted date string
+ */
+export function formatDate(date: Date, includeTime = true): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  if (!includeTime) {
+    return `${year}-${month}-${day}`
+  }
+
+  const hours = String(date.getHours()).padStart(2, "0")
+  const minutes = String(date.getMinutes()).padStart(2, "0")
+  const seconds = String(date.getSeconds()).padStart(2, "0")
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+/**
  * Counter for tracking the number of items in each status
  */
 export class StatusCounter {
@@ -112,10 +134,7 @@ export class StatusCounter {
    * @param status Status to increment
    */
   public inc(status: string): void {
-    if (!this._counters[status]) {
-      this._counters[status] = 0
-    }
-    this._counters[status]++
+    this._counters[status] = (this._counters[status] || 0) + 1
   }
 
   /**
@@ -124,14 +143,35 @@ export class StatusCounter {
    * @returns Count of items in the specified status
    */
   public get(status: string): number {
-    return this._counters[status] ?? 0
+    return this._counters[status] || 0
   }
 
   /**
    * Get the total count of all statuses
    * @returns Total count of all statuses
    */
-  public get total(): number {
-    return Object.values(this._counters).reduce((a, b) => a + b, 0)
+  public total(): number {
+    return Object.values(this._counters).reduce((acc, count) => acc + count, 0)
+  }
+}
+
+// Types for the result object with discriminated union
+type Success<T> = [T, null]
+
+type Failure<E> = [null, E]
+
+type Result<T, E = Error> = Success<T> | Failure<E>
+
+/**
+ * Wraps a promise and returns a tuple with the result or error
+ * @param promise Promise to wrap
+ * @returns Tuple with the result or error
+ */
+export const tryCatch = async <T, E = Error>(promise: Promise<T>): Promise<Result<T, E>> => {
+  try {
+    const data = await promise
+    return [data, null]
+  } catch (error) {
+    return [null, error as E]
   }
 }

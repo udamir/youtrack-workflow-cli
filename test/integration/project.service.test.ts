@@ -2,11 +2,10 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import * as crypto from "node:crypto"
 
-import { YoutrackService } from "../../src/services/youtrack.service"
-import { ProjectService } from "../../src/services/project.service"
+import { ProjectService, YoutrackService } from "../../src/services"
 import { readLockFile } from "../../src/tools/fs.tools"
-import { TestHelper } from "./test-helpers"
 import type { WorkflowHash } from "../../src/types"
+import { TestHelper } from "./test-helpers"
 
 describe("ProjectService Integration", () => {
   let helper: TestHelper
@@ -49,7 +48,7 @@ describe("ProjectService Integration", () => {
       const mockWorkflows: Record<string, WorkflowHash> = {}
       mockWorkflows[testWorkflowName] = {
         hash: testHash,
-        fileHashes: {}
+        fileHashes: {},
       }
       projectService.updateLockFile(mockWorkflows)
 
@@ -77,11 +76,11 @@ describe("ProjectService Integration", () => {
     it("should list available workflows from YouTrack", async () => {
       // Act
       const projectWorkflows = await projectService.projectWorkflows()
-      
+
       // Assert
       expect(Array.isArray(projectWorkflows)).toBe(true)
       console.log(`Available workflows: ${projectWorkflows.join(", ")}`)
-      
+
       // Note: We don't expect specific workflows to be returned as this depends on
       // the actual YouTrack instance. We're just verifying the method returns an array.
     })
@@ -104,7 +103,7 @@ describe("ProjectService Integration", () => {
       const mockWorkflows: Record<string, WorkflowHash> = {}
       mockWorkflows[testWorkflowName] = {
         hash: initialHash,
-        fileHashes: {}
+        fileHashes: {},
       }
       projectService.updateLockFile(mockWorkflows)
 
@@ -158,7 +157,7 @@ describe("ProjectService Integration", () => {
       const mockWorkflows: Record<string, WorkflowHash> = {}
       mockWorkflows[testWorkflowName] = {
         hash: currentHash,
-        fileHashes: {}
+        fileHashes: {},
       }
       projectService.updateLockFile(mockWorkflows)
 

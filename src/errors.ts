@@ -42,10 +42,19 @@ export class YouTrackApiError extends WorkflowError {
 	public status: number;
 	public responseText?: string;
 
-	constructor(message: string, status: number, responseText?: string) {
+	constructor(error: unknown, message: string, status = 500, responseText?: string) {
 		super(message);
-		this.status = status;
-		this.responseText = responseText;
+		if (error instanceof YouTrackApiError) {
+			this.status = error.status;
+			this.responseText = error.responseText;
+		} else {
+			this.status = status;
+			if (!responseText && error instanceof Error) {
+				this.responseText = error.message;
+			} else {
+				this.responseText = responseText || "Unknown error";
+			}
+		}
 	}
 }
 

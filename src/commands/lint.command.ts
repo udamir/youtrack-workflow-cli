@@ -2,13 +2,10 @@ import ora from "ora"
 
 import { COLORS, PROGRESS_STATUS, PROGRESS_STATUS_DATA } from "../consts"
 import { colorize, colorizeIcon, printItemStatus } from "../utils"
-import { LintingService } from "../services/linting.service"
 import { readLockFile } from "../tools/fs.tools"
+import { LintingService } from "../services"
 
-export const lintCommand = async (
-  workflow: string[],
-  { typeCheck }: { typeCheck: boolean },
-) => {
+export const lintCommand = async (workflow: string[], { typeCheck }: { typeCheck: boolean }) => {
   // Load configuration from package.json
   const lintingService = new LintingService({
     enableEslint: typeCheck,
@@ -38,7 +35,6 @@ export const lintCommand = async (
 
       printLintSummary(workflowName, errors, warnings)
       printLintResult(errors, warnings)
-
     } catch (error) {
       spinner.stop()
       printItemStatus(workflowPath, PROGRESS_STATUS.FAILED, error instanceof Error ? error.message : "Unknown error")
@@ -61,8 +57,9 @@ export const printLintSummary = (workflowName: string, errors: string[], warning
     message.push(colorize("No issues found", COLORS.FG.GREEN))
   }
 
-  console.log(`${colorizeIcon(eCount ? PROGRESS_STATUS_DATA[PROGRESS_STATUS.FAILED] : wCount ? PROGRESS_STATUS_DATA[PROGRESS_STATUS.WARNING] : PROGRESS_STATUS_DATA[PROGRESS_STATUS.SUCCESS])} ${workflowName}: ${message.join(", ")}`)
-
+  console.log(
+    `${colorizeIcon(eCount ? PROGRESS_STATUS_DATA[PROGRESS_STATUS.FAILED] : wCount ? PROGRESS_STATUS_DATA[PROGRESS_STATUS.WARNING] : PROGRESS_STATUS_DATA[PROGRESS_STATUS.SUCCESS])} ${workflowName}: ${message.join(", ")}`,
+  )
 }
 
 export const printLintResult = (errors: string[], warnings: string[]) => {
