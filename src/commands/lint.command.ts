@@ -8,7 +8,7 @@ import { LintingService } from "../services"
 export const lintCommand = async (workflow: string[], { typeCheck }: { typeCheck: boolean }) => {
   // Load configuration from package.json
   const lintingService = new LintingService({
-    enableEslint: typeCheck,
+    enableEslint: true,
     enableTypeCheck: typeCheck,
   })
 
