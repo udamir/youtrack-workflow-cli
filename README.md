@@ -29,13 +29,13 @@ the npm package manager that lets you work with the package in your projects.
 Next, install the **youtrack-workflow-cli** package in your development environment. The easiest way to get
 started is to install the package globally with the following command:
 
-```
+```bash
 npm install -g youtrack-workflow-cli
 ```
 
 If you prefer to install packages as dependencies in your development environment, enter:
 
-```
+```bash
 npm install --save-dev youtrack-workflow-cli
 ```
 
@@ -43,7 +43,7 @@ npm install --save-dev youtrack-workflow-cli
 
 After installation you can use `npx` to run the commands directly:
 
-```
+```bash
 npx ytw <command>
 ```
 
@@ -54,7 +54,7 @@ commands are available:
 
 ### List
 
-```
+```bash
 npx ytw list
 ```
 
@@ -62,7 +62,7 @@ Lists all the workflows that are available in your YouTrack installation.
 
 ### Add
 
-```
+```bash
 npx ytw add [workflow-name...]
 ```
 
@@ -74,7 +74,7 @@ Options:
 
 ### Pull
 
-```
+```bash
 npx ytw pull [workflow-name...] [--force]
 ```
 
@@ -86,7 +86,7 @@ Options:
 
 ### Push
 
-```
+```bash
 npx ytw push [workflow-name...] [--force]
 ```
 
@@ -98,7 +98,7 @@ Options:
 
 ### Remove
 
-```
+```bash
 npx ytw remove [workflow-name...]
 ```
 
@@ -109,7 +109,7 @@ Options:
 
 ### Status
 
-```
+```bash
 ytw status
 ```
 
@@ -121,7 +121,7 @@ Checks the status of all workflows in your project and compares them with the ve
 
 ### Sync
 
-```
+```bash
 ytw sync [workflow-name...] [--force [strategy]] [--watch] [--lint] [--type-check] [--max-warnings [number]]
 ```
 
@@ -140,7 +140,7 @@ Options:
 
 ### Lint
 
-```
+```bash
 ytw lint [workflow-name...] [--type-check]
 ```
 
@@ -152,7 +152,7 @@ Options:
 
 ### Logs
 
-```
+```bash
 ytw logs [workflow-name...] [--watch]
 ```
 
@@ -164,7 +164,7 @@ Options:
 
 ### Types
 
-```
+```bash
 ytw types [project-id]
 ```
 
@@ -198,7 +198,7 @@ Most commands require the following parameters:
 
 You can set the following environment variables to avoid passing host and token parameters with each command:
 
-```
+```bash
 YOUTRACK_BASE_URL=https://youtrack.example.com
 YOUTRACK_TOKEN=your-permanent-token
 ```
@@ -207,7 +207,7 @@ YOUTRACK_TOKEN=your-permanent-token
 
 You can use [youtrack-workflow-api-types](https://github.com/udamir/youtrack-workflow-api-types) package and generated types for your project to write type-safe workflows.
 
-```
+```bash
 npm install --save-dev youtrack-workflow-api-types typescript
 ```
 
