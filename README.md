@@ -70,7 +70,6 @@ Adds one or more workflows to your project. If no workflow names are specified, 
 
 Options:
 - If no workflow name is provided, it will prompt you to select from available workflows in YouTrack.
-- Use `@` to select workflows interactively from the YouTrack server.
 
 ### Pull
 
@@ -149,6 +148,33 @@ Runs linting checks on workflow files. This helps maintain code quality and catc
 Options:
 - `--type-check` - run TypeScript type checking
 - If no workflow names are provided, it will lint all workflows in your project.
+
+
+Eslint config (`eslint.config.js`) example:
+```js
+const js = require('@eslint/js');
+
+module.exports = [
+  js.configs.recommended,
+  {
+    files: ['**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: {
+        console: 'readonly',
+        require: 'readonly',
+      },
+    },
+    rules: {
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'no-console': 'warn',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    },
+  },
+];
+```
 
 ### Logs
 
@@ -286,7 +312,7 @@ You can configure your workflow management in your project's `package.json` file
 - `prepush` (string): Script to run before pushing workflows to YouTrack. If this script fails (returns non-zero exit code), the push operation will be aborted.
 - `postpush` (string): Script to run after successfully pushing a workflow to YouTrack.
 
-These scripts are executed with the workflow name passed as an argument, which allows you to perform different actions based on which workflow is being processed.
+These scripts are executed with the `workflowName` (and `ruleName` in sync with watch mode) passed as arguments, which allows you to perform different actions based on which workflow is being processed.
 
 Example usage:
 
