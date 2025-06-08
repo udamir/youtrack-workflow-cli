@@ -75,14 +75,11 @@ describe("ProjectService Integration", () => {
 
     it("should list available workflows from YouTrack", async () => {
       // Act
-      const projectWorkflows = await projectService.projectWorkflows()
+      const projectWorkflows = await projectService.notAddedWorkflows()
 
       // Assert
       expect(Array.isArray(projectWorkflows)).toBe(true)
       console.log(`Available workflows: ${projectWorkflows.join(", ")}`)
-
-      // Note: We don't expect specific workflows to be returned as this depends on
-      // the actual YouTrack instance. We're just verifying the method returns an array.
     })
   })
 

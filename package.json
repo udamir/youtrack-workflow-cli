@@ -1,6 +1,6 @@
 {
   "name": "youtrack-workflow-cli",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Youtrack workflow CLI",
   "repository": {
     "type": "git",
@@ -66,13 +66,5 @@
       "/node_modules/",
       "/dist/"
     ]
-  },
-  "ytw": {
-    "linting": {
-      "enableEslint": true,
-      "enableTypeCheck": false,
-      "failOnWarnings": false,
-      "maxWarnings": 10
-    }
   }
 }

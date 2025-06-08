@@ -1,4 +1,4 @@
-import type { PROGRESS_STATUS, WORKFLOW_STATUS, SYNC_TYPE, SYNC_STATUS, WATCH_EVENT, LEVELS } from "./consts"
+import type { PROGRESS_STATUS, WORKFLOW_STATUS, SYNC_TYPE, SYNC_STATUS, WATCH_EVENT } from "./consts"
 
 /**
  * Linting configuration options
@@ -18,6 +18,10 @@ export interface LintingConfig {
 export interface YtwConfig {
   /** Linting configuration */
   linting?: Partial<LintingConfig>
+  /** Pre-push script to run before pushing workflows */
+  prepush?: string
+  /** Post-push script to run after pushing workflows */
+  postpush?: string
 }
 
 /**

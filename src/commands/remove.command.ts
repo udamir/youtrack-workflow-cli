@@ -1,7 +1,7 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { isError, printItemStatus, progressStatus, StatusCounter } from "../utils"
+import { isError, printItemStatus, progressStatus, StatusCounter, tryCatch } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
 
 /**
@@ -20,37 +20,32 @@ export const removeCommand = async (workflows: string[] = [], { host = "", token
   const youtrackService = new YoutrackService(host, token)
   const projectService = new ProjectService(youtrackService)
 
+  const [projectWorkflows, error] = await tryCatch(projectService.projectWorkflows(workflows))
+
+  if (error) {
+    console.error(error.message)
+    return
+  }
+
   if (workflows.length === 0) {
-    try {
-      // Get project workflows from the workflows property
-      const projectWorkflows = await projectService.projectWorkflows()
+    // Get project workflows from the workflows property
+    // Show prompt to select workflows to remove
+    const selected = await inquirer.prompt([
+      {
+        type: "checkbox",
+        name: "workflows",
+        message: "Select workflows to remove:",
+        choices: projectWorkflows.map((w) => w.name),
+      },
+    ])
 
-      if (projectWorkflows.length === 0) {
-        console.log("No workflows in project")
-        return
-      }
-
-      // Show prompt to select workflows to remove
-      const selected = await inquirer.prompt([
-        {
-          type: "checkbox",
-          name: "workflows",
-          message: "Select workflows to remove:",
-          choices: projectWorkflows.map((w) => w.name),
-        },
-      ])
-
-      if (!selected.workflows || selected.workflows.length === 0) {
-        console.log("No workflows selected")
-        return
-      }
-
-      // Use selected workflows instead of modifying the parameter
-      workflows.push(...selected.workflows)
-    } catch (error) {
-      console.error("Error fetching project workflows:", error)
+    if (!selected.workflows || selected.workflows.length === 0) {
+      console.log("No workflows selected")
       return
     }
+
+    // Use selected workflows instead of modifying the parameter
+    workflows.push(...selected.workflows)
   }
 
   // Process workflows and track progress

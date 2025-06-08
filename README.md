@@ -14,6 +14,10 @@ The **youtrack-workflow-cli** package contains utilities that help you manage Yo
 - **Type Check**: Run TypeScript type checking on workflow files
 - **Sync Workflows**: Synchronize workflows between local and YouTrack
 - **Sync with Watch mode**: Watch for file changes and push changes to YouTrack
+- **Script Hooks**: Run custom scripts before and after pushing workflows to YouTrack
+- **Interactive Selection**: Select workflows to work with from interactive prompts
+- **Status Tracking**: Track the status of workflows with visual indicators
+- **Conflict Resolution**: Resolve conflicts between local and server versions
 - **Secure Authentication**: Use permanent tokens for secure access to YouTrack API
 - **Environment Variables Support**: Configure via command line or environment variables
 - **TypeScript Support**: Full TypeScript type definitions for YouTrack scripting API
@@ -247,6 +251,52 @@ exports.rule = entities.Issue.onChange({
     // Use typescript validation for issue fields and work items
   }
 });
+```
+
+## Configuration in package.json
+
+You can configure your workflow management in your project's `package.json` file using the `ytw` section:
+
+```json
+{
+  "ytw": {
+    "linting": {
+      "enableEslint": true,
+      "enableTypeCheck": false,
+      "failOnWarnings": false,
+      "maxWarnings": 10
+    },
+    "prepush": "your-script-command",
+    "postpush": "your-script-command"
+  }
+}
+```
+
+### Available options:
+
+#### Linting configuration:
+
+- `enableEslint` (boolean): Enable or disable ESLint checks during linting and sync commands.
+- `enableTypeCheck` (boolean): Enable or disable TypeScript type checking during linting and sync commands.
+- `failOnWarnings` (boolean): Whether lint warnings should cause the command to fail.
+- `maxWarnings` (number): Maximum number of warnings allowed before the linting fails.
+
+#### Script hooks:
+
+- `prepush` (string): Script to run before pushing workflows to YouTrack. If this script fails (returns non-zero exit code), the push operation will be aborted.
+- `postpush` (string): Script to run after successfully pushing a workflow to YouTrack.
+
+These scripts are executed with the workflow name passed as an argument, which allows you to perform different actions based on which workflow is being processed.
+
+Example usage:
+
+```json
+{
+  "ytw": {
+    "prepush": "node scripts/validate-workflow.js",
+    "postpush": "node scripts/notify-team.js"
+  }
+}
 ```
 
 ## Special Instructions for SSL Certificates

@@ -1,7 +1,7 @@
 import ora from "ora"
 
 import { PROGRESS_STATUS, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../consts"
-import { isError, printItemStatus, progressStatus, StatusCounter } from "../utils"
+import { isError, printItemStatus, progressStatus, StatusCounter, tryCatch } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
 import { isManifestExists } from "../tools/fs.tools"
 import type { WorkflowStatus } from "../types"
@@ -23,12 +23,10 @@ export const statusCommand = async ({ host = "", token = "" } = {}): Promise<voi
   const projectService = new ProjectService(youtrackService)
 
   // Get project workflows
-  const serverWorkflows = await youtrackService.fetchWorkflows()
+  const [workflows, error] = await tryCatch(projectService.projectWorkflows())
 
-  const workflows = serverWorkflows.filter((w) => isManifestExists(w.name))
-
-  if (workflows.length === 0) {
-    console.log("No workflows found")
+  if (error) {
+    console.error(error.message)
     return
   }
 

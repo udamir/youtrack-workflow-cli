@@ -2,9 +2,11 @@ import inquirer from "inquirer"
 import ora from "ora"
 
 import { WorkflowError, WorkflowNotFoundError, YouTrackApiError } from "../errors"
-import { isError, printItemStatus, StatusCounter } from "../utils"
+import { isError, printItemStatus, StatusCounter, tryCatch } from "../utils"
 import { PROGRESS_STATUS, WORKFLOW_STATUS } from "../consts"
 import { YoutrackService, ProjectService } from "../services"
+import { executeScript } from "../tools/script.tools"
+import { readPackageJson } from "../tools/fs.tools"
 
 /**
  * Command for pushing workflows to YouTrack
@@ -24,10 +26,10 @@ export const pushCommand = async (
   const projectService = new ProjectService(youtrackService)
 
   let workflowsToProcess: string[] = []
-  const projectWorkflows = await projectService.projectWorkflows()
+  const [projectWorkflows, error] = await tryCatch(projectService.projectWorkflows(workflows))
 
-  if (!projectWorkflows.length) {
-    console.error("No workflows in project. Add workflows first.")
+  if (error) {
+    console.error(error.message)
     return
   }
 
@@ -82,8 +84,40 @@ export const pushCommand = async (
 
   // Process workflows and track progress
   const counter = new StatusCounter()
+  const { ytw } = readPackageJson()
+
+  const runScript = async (script: string, workflow: string) => {
+    const spinner = ora({
+      text: `${workflow}: Running ${script} script (${script} ${workflow})`,
+      color: "blue",
+    }).start()
+    const [result, error] = await tryCatch(executeScript(script, workflow))
+    spinner.stop()
+
+    if (error) {
+      printItemStatus(
+        workflow,
+        PROGRESS_STATUS.WARNING,
+        `Post-push script failed: ${error instanceof Error ? error.message : String(error)}`,
+      )
+      return false
+    }
+
+    printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Post-push script completed")
+    if (result) {
+      console.log(result)
+    }
+    return true
+  }
 
   for (const workflow of workflowsToProcess) {
+    // Execute pre-push script - this will throw if the script fails
+    if (ytw?.prepush) {
+      if (!(await runScript(ytw?.prepush, workflow))) {
+        continue
+      }
+    }
+
     // Create spinner for tracking progress
     const spinner = ora({
       text: `${workflow}: ...\nPushing workflow to YouTrack (${counter.total}/${workflowsToProcess.length})`,
@@ -111,9 +145,13 @@ export const pushCommand = async (
         printItemStatus(workflow, PROGRESS_STATUS.FAILED, `Failed to push: ${errorMessage}`)
       }
     }
+
+    if (ytw?.postpush) {
+      await runScript(ytw?.postpush, workflow)
+    }
   }
 
   console.log(
-    `\nPushed workflows: ${counter.get(PROGRESS_STATUS.SUCCESS)} (${counter.get(PROGRESS_STATUS.FAILED)} failed)`,
+    `Pushed workflows: ${counter.get(PROGRESS_STATUS.SUCCESS)} (${counter.get(PROGRESS_STATUS.FAILED)} failed)`,
   )
 }

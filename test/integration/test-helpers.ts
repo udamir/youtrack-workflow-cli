@@ -104,6 +104,20 @@ export class TestHelper {
     // Create a basic workflow script
     await fs.promises.writeFile(path.join(workflowDir, "workflow.js"), `// Test workflow content for ${workflowName}`)
 
+    // Create a manifest.json file which is required by isManifestExists check
+    await fs.promises.writeFile(
+      path.join(workflowDir, "manifest.json"),
+      JSON.stringify(
+        {
+          name: workflowName,
+          description: "Test workflow for integration tests",
+          main: "workflow.js"
+        },
+        null,
+        2
+      )
+    )
+
     return workflowDir
   }
 

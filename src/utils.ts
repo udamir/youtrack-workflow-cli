@@ -150,7 +150,7 @@ export class StatusCounter {
    * Get the total count of all statuses
    * @returns Total count of all statuses
    */
-  public total(): number {
+  public get total(): number {
     return Object.values(this._counters).reduce((acc, count) => acc + count, 0)
   }
 }

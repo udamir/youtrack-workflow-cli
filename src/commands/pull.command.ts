@@ -1,7 +1,7 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { isError, printItemStatus, StatusCounter } from "../utils"
+import { isError, printItemStatus, StatusCounter, tryCatch } from "../utils"
 import { WorkflowError, WorkflowNotFoundError } from "../errors"
 import { YoutrackService, ProjectService } from "../services"
 import { PROGRESS_STATUS, WORKFLOW_STATUS } from "../consts"
@@ -24,10 +24,10 @@ export const pullCommand = async (
   const projectService = new ProjectService(youtrackService)
 
   let workflowsToProcess: string[] = []
-  const projectWorkflows = await projectService.projectWorkflows()
+  const [projectWorkflows, error] = await tryCatch(projectService.projectWorkflows(workflows))
 
-  if (!projectWorkflows.length) {
-    console.error("No workflows in project. Add workflows first.")
+  if (error) {
+    console.error(error.message)
     return
   }
 

@@ -2,20 +2,27 @@ import { watch } from "chokidar"
 import * as path from "node:path"
 
 import type { ProjectService } from "./project.service"
-import type { LintingService } from "./linting.service"
 import type { SyncStatus, WatchEvent } from "../types"
 import { SYNC_STATUS, WATCH_EVENT } from "../consts"
 
 // Define event handlers for the watch service
 export interface WatchEventHandlers {
-  // Handler for file changes (add, modify, delete)
-  onFileChange?: (workflowName: string, filename: string, eventType: WatchEvent) => void
+  /**
+   * Handler for file changes (add, modify, delete)
+   * @param workflowName Workflow name
+   * @param filename File name
+   * @param eventType Type of event
+   * @returns Error message if there is an error, undefined otherwise
+   */
+  onFileChange?: (workflowName: string, filename: string, eventType: WatchEvent) => Promise<boolean>
 
-  // Handler for linting results
-  onLintResult?: (workflowName: string, errors: string[], warnings: string[]) => void
-
-  // Handler for sync results
-  onSyncResult?: (workflowName: string, status: SyncStatus, message?: string) => void
+  /**
+   * Handler for sync results
+   * @param workflowName Workflow name
+   * @param status Sync status
+   * @param message Optional message
+   */
+  onSyncResult?: (workflowName: string, status: SyncStatus, message?: string) => Promise<void>
 }
 
 export class WatchService {
@@ -24,7 +31,6 @@ export class WatchService {
 
   constructor(
     private projectService: ProjectService,
-    private lintingService: LintingService,
     private eventHandlers: WatchEventHandlers = {},
   ) {}
 
@@ -83,23 +89,18 @@ export class WatchService {
     }
     this.syncing = true
 
-    this.eventHandlers.onFileChange?.(workflowName, filename, eventType)
-
-    if (this.lintingService.config.enableEslint || this.lintingService.config.enableTypeCheck) {
-      const lintResult = await this.lintingService.lintWorkflow(workflowName)
-      this.eventHandlers.onLintResult?.(workflowName, lintResult.errors, lintResult.warnings)
-      if (lintResult.errors.length) {
-        this.eventHandlers.onSyncResult?.(workflowName, SYNC_STATUS.FAILED, "Sync failed: errors found")
-        this.syncing = false
-        return
-      }
+    const error = await this.eventHandlers.onFileChange?.(workflowName, filename, eventType)
+    if (error) {
+      await this.eventHandlers.onSyncResult?.(workflowName, SYNC_STATUS.FAILED, "Sync Failed")
+      this.syncing = false
+      return
     }
 
     try {
       await this.projectService.uploadWorkflow(workflowName, true)
-      this.eventHandlers.onSyncResult?.(workflowName, SYNC_STATUS.PUSHED, "Workflow uploaded successfully")
+      await this.eventHandlers.onSyncResult?.(workflowName, SYNC_STATUS.PUSHED, "Workflow uploaded successfully")
     } catch (error) {
-      this.eventHandlers.onSyncResult?.(
+      await this.eventHandlers.onSyncResult?.(
         workflowName,
         SYNC_STATUS.FAILED,
         error instanceof Error ? error.message : "Unknown error",

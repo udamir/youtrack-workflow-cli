@@ -1,12 +1,14 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { COLORS, PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
 import { YoutrackService, ProjectService, LintingService, WatchService } from "../services"
-import { colorize, isError, printItemStatus, StatusCounter } from "../utils"
+import { PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
+import { isError, printItemStatus, StatusCounter, tryCatch } from "../utils"
 import { printLintResult, printLintSummary } from "./lint.command"
 import { printWorkflowStatus } from "./status.command"
 import type { SyncStatus, SyncType } from "../types"
+import { executeScript } from "../tools/script.tools"
+import { readPackageJson } from "../tools/fs.tools"
 
 type SyncCommandOptions = {
   host?: string
@@ -46,7 +48,12 @@ export const syncCommand = async (
     maxWarnings,
   })
 
-  const workflowsToWatch = await projectService.projectWorkflows(workflows)
+  const [workflowsToWatch, error] = await tryCatch(projectService.projectWorkflows(workflows))
+
+  if (error) {
+    console.error(error.message)
+    return
+  }
 
   // Sync workflows
   const printSyncStatus = (workflow: string, status: SyncStatus) => {
@@ -64,11 +71,6 @@ export const syncCommand = async (
     }
   }
 
-  if (!workflowsToWatch.length) {
-    console.log("No workflows to sync")
-    return
-  }
-
   // Create spinner for tracking progress
   const spinner = ora({
     text: `${workflowsToWatch[0].name}: ...\nSyncing workflow (0/${workflowsToWatch.length})`,
@@ -76,51 +78,91 @@ export const syncCommand = async (
   }).start()
 
   const statuses = new StatusCounter()
+  const { ytw } = readPackageJson()
+
+  const runScript = async (script: string, workflow: string) => {
+    const spinner = ora({
+      text: `${workflow}: Running ${script} script (${script} ${workflow})`,
+      color: "blue",
+    }).start()
+    const [result, error] = await tryCatch(executeScript(script, workflow))
+    spinner.stop()
+
+    if (error) {
+      printItemStatus(
+        workflow,
+        PROGRESS_STATUS.WARNING,
+        `Post-push script failed: ${error instanceof Error ? error.message : String(error)}`,
+      )
+      return false
+    }
+
+    printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Post-push script completed")
+    if (result) {
+      console.log(result)
+    }
+    return true
+  }
 
   await projectService.syncWorkflows(
     workflowsToWatch.map(({ name }) => name),
-    async (workflow) => {
-      const fileStatus = await projectService.getWorkflowFileStatus(workflow)
+    {
+      onConflict: async (workflow) => {
+        const fileStatus = await projectService.getWorkflowFileStatus(workflow)
 
-      spinner.stop()
-      printWorkflowStatus(workflow, WORKFLOW_STATUS.CONFLICT, fileStatus)
+        spinner.stop()
+        printWorkflowStatus(workflow, WORKFLOW_STATUS.CONFLICT, fileStatus)
 
-      if (force) {
-        return force
-      }
+        if (force) {
+          return force
+        }
 
-      const selected = await inquirer.prompt<{ syncType: SyncType }>([
-        {
-          type: "list",
-          name: "syncType",
-          message: "Select action for workflow",
-          choices: [SYNC_TYPE.SKIP, SYNC_TYPE.PULL, SYNC_TYPE.PUSH],
-        },
-      ])
+        const selected = await inquirer.prompt<{ syncType: SyncType }>([
+          {
+            type: "list",
+            name: "syncType",
+            message: "Select action for workflow",
+            choices: [SYNC_TYPE.SKIP, SYNC_TYPE.PULL, SYNC_TYPE.PUSH],
+          },
+        ])
 
-      return selected.syncType
-    },
-    (workflow, status, index) => {
-      spinner.stop()
-      printSyncStatus(workflow, status)
-      statuses.inc(status)
-      if (index + 1 < workflowsToWatch.length) {
-        spinner.start(
-          `${workflowsToWatch[index + 1].name}: ...\nSyncing workflow (${index + 1}/${workflowsToWatch.length})`,
-        )
-      }
-    },
-    async (workflow) => {
-      const { errors, warnings } = await lintingService.lintWorkflow(workflow)
-      spinner.stop()
-      if (errors.length) {
-        printLintSummary(`${workflow}: ${colorize("sync failed", COLORS.FG.RED)}`, errors, warnings)
-        statuses.inc(SYNC_STATUS.FAILED)
-      } else {
-        printLintSummary(workflow, errors, warnings)
-      }
-      printLintResult(errors, warnings)
-      return !errors.length
+        return selected.syncType
+      },
+      onSync: async (workflow, status, index) => {
+        spinner.stop()
+        printSyncStatus(workflow, status)
+        statuses.inc(status)
+
+        // Execute post-push script if workflow was pushed and post-push script exists
+        if (status === SYNC_STATUS.PUSHED && ytw?.postpush) {
+          await runScript(ytw?.postpush, workflow)
+        }
+
+        if (index + 1 < workflowsToWatch.length) {
+          spinner.start(
+            `${workflowsToWatch[index + 1].name}: ...\nSyncing workflow (${index + 1}/${workflowsToWatch.length})`,
+          )
+        }
+      },
+      preUploadCheck: async (workflow) => {
+        const { errors, warnings } = await lintingService.lintWorkflow(workflow)
+        spinner.stop()
+        if (errors.length) {
+          printLintSummary?.(workflow, errors, warnings)
+          statuses?.inc(SYNC_STATUS.FAILED)
+          return false
+        }
+
+        printLintSummary(`${workflow}: Lint results`, errors, warnings)
+        printLintResult?.(errors, warnings)
+
+        // Execute pre-push script if pre-push script exists
+        if (ytw?.prepush) {
+          return runScript(ytw?.prepush, workflow)
+        }
+
+        return true // Only proceed with pushing if linting passes and pre-push script succeeds
+      },
     },
   )
 
@@ -133,26 +175,34 @@ export const syncCommand = async (
       return
     }
 
-    // Create watch service with event handlers
-    const watchService = new WatchService(projectService, lintingService, {
+    const watchService = new WatchService(projectService, {
       // Display file change events
-      onFileChange: (workflowName, filename, eventType) => {
+      onFileChange: async (workflowName, filename, eventType) => {
         const checkNeeded = lintingService.config.enableEslint || lintingService.config.enableTypeCheck
         printItemStatus(
           `${workflowName}/${filename}`,
           PROGRESS_STATUS.INFO,
           `${eventType} detected${checkNeeded ? ". Checking workflow:" : ""}`,
         )
+
+        if (checkNeeded) {
+          const lintResult = await lintingService.lintWorkflow(workflowName)
+          if (lintResult.errors.length) {
+            printLintSummary?.(workflowName, lintResult.errors, lintResult.warnings)
+            printLintResult?.(lintResult.errors, lintResult.warnings)
+            return false
+          }
+        }
+
+        if (ytw?.prepush) {
+          await runScript(ytw?.prepush, workflowName)
+        }
+
+        return true
       },
 
-      // Display linting results
-      onLintResult: (workflowName, errors, warnings) => {
-        printLintSummary(workflowName, errors, warnings)
-        printLintResult(errors, warnings)
-      },
-
-      // Display sync results
-      onSyncResult: (workflowName, status, message) => {
+      // Custom onSyncResult handler that implements pre/post-push scripts
+      onSyncResult: async (workflowName, status, message) => {
         const statusType =
           status === SYNC_STATUS.PUSHED
             ? PROGRESS_STATUS.SUCCESS
@@ -161,6 +211,11 @@ export const syncCommand = async (
               : PROGRESS_STATUS.INFO
 
         printItemStatus(`${workflowName}`, statusType, message || status)
+
+        // Run post-push script after successful upload
+        if (ytw?.postpush && status === SYNC_STATUS.PUSHED) {
+          await runScript(ytw?.postpush, workflowName)
+        }
       },
     })
 

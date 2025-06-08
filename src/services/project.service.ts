@@ -8,16 +8,23 @@ import {
   isManifestExists,
 } from "../tools/fs.tools"
 import type { WorkflowFile, WorkflowStatus, WorkflowHash, SyncType, SyncStatus, ActionResult } from "../types"
-import { WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
+import { WorkflowError, WorkflowNotFoundError, WorkflowNotInProjectError } from "../errors"
 import { errorStatus, skippedStatus, successStatus } from "../utils"
 import { WORKFLOW_STATUS, SYNC_STATUS, SYNC_TYPE } from "../consts"
 import type { WorkflowEntity, YoutrackService } from "./youtrack"
+
 import { calculateWorkflowHash } from "../tools/hash.tools"
 
 type WorkflowDataCache = {
   files: WorkflowFile[]
   hash: string
   fileHashes: Record<string, string>
+}
+
+export interface SyncEventHandlers {
+  onConflict?: (workflow: string) => Promise<SyncType>
+  onSync?: (workflow: string, syncStatus: SyncStatus, index: number) => void
+  preUploadCheck?: (workflow: string) => Promise<boolean>
 }
 
 export class ProjectService {
@@ -45,10 +52,27 @@ export class ProjectService {
   /**
    * Get a list of workflows in the project
    * @returns Array of workflow entities
+   * @throws {WorkflowError} If no workflows are found in the project
+   * @throws {WorkflowNotFoundError} If a workflow could not be found
+   * @throws {YouTrackApiError} If there was an issue with the YouTrack API
    */
   public async projectWorkflows(filter: string[] = []): Promise<WorkflowEntity[]> {
     const serverWorkflows = await this.youtrack.fetchWorkflows()
-    return serverWorkflows.filter(({ name }) => isManifestExists(name) && (!filter.length || filter.includes(name)))
+    const localWorkflows = serverWorkflows.filter(({ name }) => isManifestExists(name))
+
+    if (!localWorkflows.length) {
+      throw new WorkflowError("No workflows in project. Add workflows first.")
+    }
+
+    if (filter.length) {
+      const notFound = filter.find((name) => !localWorkflows.some((w) => w.name === name))
+      if (notFound) {
+        throw new WorkflowNotFoundError(notFound)
+      }
+      return localWorkflows.filter(({ name }) => filter.includes(name))
+    }
+
+    return localWorkflows
   }
 
   /**
@@ -97,6 +121,8 @@ export class ProjectService {
       throw new WorkflowNotFoundError(name)
     }
     const { files, ...rest } = localCache
+
+    // Upload the workflow
     await this.youtrack.uploadWorkflow(name, files)
 
     // Update lock file with local data
@@ -140,21 +166,15 @@ export class ProjectService {
   /**
    * Synchronize workflows between local files and YouTrack
    * @param workflows Array of workflow names to synchronize
-   * @param onConflict Callback function to handle conflict events
-   * @param onSync Callback function to handle sync events
+   * @param eventHandlers Event handlers for sync events
    */
-  public async syncWorkflows(
-    workflows: string[],
-    onConflict?: (workflow: string) => Promise<SyncType>,
-    onSync?: (workflow: string, syncStatus: SyncStatus, index: number) => void,
-    preUploadCheck?: (workflow: string) => Promise<boolean>,
-  ) {
+  public async syncWorkflows(workflows: string[], eventHandlers: SyncEventHandlers = {}) {
     let index = 0
 
     const getSyncType = async (workflow: string, workflowStatus: WorkflowStatus) => {
       switch (workflowStatus) {
         case WORKFLOW_STATUS.CONFLICT:
-          return (await onConflict?.(workflow)) || SYNC_TYPE.SKIP
+          return (await eventHandlers.onConflict?.(workflow)) || SYNC_TYPE.SKIP
         case WORKFLOW_STATUS.MODIFIED:
         case WORKFLOW_STATUS.NEW:
           return SYNC_TYPE.PUSH
@@ -173,8 +193,8 @@ export class ProjectService {
         if (status !== WORKFLOW_STATUS.SYNCED) {
           syncType = await getSyncType(workflow, status)
           if (syncType === SYNC_TYPE.PUSH) {
-            if (preUploadCheck) {
-              const allowed = await preUploadCheck(workflow)
+            if (eventHandlers.preUploadCheck) {
+              const allowed = await eventHandlers.preUploadCheck(workflow)
               if (!allowed) {
                 continue
               }
@@ -191,7 +211,7 @@ export class ProjectService {
       } catch (error) {
         syncStatus = SYNC_STATUS.FAILED
       }
-      onSync?.(workflow, syncStatus, index++)
+      eventHandlers.onSync?.(workflow, syncStatus, index++)
     }
   }
 
