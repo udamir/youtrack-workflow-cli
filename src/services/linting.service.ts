@@ -19,9 +19,9 @@ export class LintingService {
     const esLintConfig = fileExists("eslint.config.js")
 
     this.config = {
-      enableEslint: enableEslint ?? linting?.enableEslint ?? esLintConfig ?? false,
-      enableTypeCheck: enableTypeCheck ?? linting?.enableTypeCheck ?? false,
-      maxWarnings: maxWarnings ?? linting?.maxWarnings ?? 10,
+      enableEslint: linting?.enableEslint ?? enableEslint ?? esLintConfig ?? false,
+      enableTypeCheck: linting?.enableTypeCheck ?? enableTypeCheck ?? false,
+      maxWarnings: linting?.maxWarnings ?? maxWarnings ?? 10,
     }
   }
 

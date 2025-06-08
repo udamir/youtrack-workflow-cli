@@ -27,7 +27,7 @@ type SyncCommandOptions = {
  */
 export const syncCommand = async (
   workflows: string[] = [],
-  { host = "", token = "", watch, force, lint, typeCheck, maxWarnings }: SyncCommandOptions = {},
+  { host = "", token = "", watch, force, lint = false, typeCheck = false, maxWarnings = 10 }: SyncCommandOptions = {},
 ): Promise<void> => {
   // Validate required parameters
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
