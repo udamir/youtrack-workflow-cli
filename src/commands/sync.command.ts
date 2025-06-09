@@ -148,13 +148,13 @@ export const syncCommand = async (
         const { errors, warnings } = await lintingService.lintWorkflow(workflow)
         spinner.stop()
         if (errors.length) {
-          printLintSummary?.(workflow, errors, warnings)
-          statuses?.inc(SYNC_STATUS.FAILED)
+          printLintSummary(workflow, errors, warnings)
+          statuses.inc(SYNC_STATUS.FAILED)
           return false
         }
 
         printLintSummary(`${workflow}: Lint results`, errors, warnings)
-        printLintResult?.(errors, warnings)
+        printLintResult(errors, warnings)
 
         // Execute pre-push script if pre-push script exists
         if (ytw?.prepush) {
@@ -188,8 +188,8 @@ export const syncCommand = async (
         if (checkNeeded) {
           const lintResult = await lintingService.lintWorkflow(workflowName)
           if (lintResult.errors.length) {
-            printLintSummary?.(workflowName, lintResult.errors, lintResult.warnings)
-            printLintResult?.(lintResult.errors, lintResult.warnings)
+            printLintSummary(workflowName, lintResult.errors, lintResult.warnings)
+            printLintResult(lintResult.errors, lintResult.warnings)
             return false
           }
         }
