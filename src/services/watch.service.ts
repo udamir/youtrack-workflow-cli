@@ -89,8 +89,8 @@ export class WatchService {
     }
     this.syncing = true
 
-    const error = await this.eventHandlers.onFileChange?.(workflowName, filename, eventType)
-    if (error) {
+    const success = await this.eventHandlers.onFileChange?.(workflowName, filename, eventType)
+    if (!success) {
       await this.eventHandlers.onSyncResult?.(workflowName, SYNC_STATUS.FAILED, "Sync Failed")
       this.syncing = false
       return

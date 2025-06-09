@@ -187,9 +187,10 @@ export const syncCommand = async (
 
         if (checkNeeded) {
           const lintResult = await lintingService.lintWorkflow(workflowName)
+
+          printLintSummary(workflowName, lintResult.errors, lintResult.warnings)
+          printLintResult(lintResult.errors, lintResult.warnings)
           if (lintResult.errors.length) {
-            printLintSummary(workflowName, lintResult.errors, lintResult.warnings)
-            printLintResult(lintResult.errors, lintResult.warnings)
             return false
           }
         }
