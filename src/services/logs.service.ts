@@ -28,13 +28,43 @@ export class LogService {
 
   constructor(private youtrackService: YoutrackService) {}
 
+  private async fetchWorkflowRuleLogs(rule: WorkflowRule, top = -1): Promise<RuleLog[]> {
+    // Get last timestamp from cache or use 0 to fetch all logs
+    const rulesCache = this._logsCache[rule.workflowId]?.rules
+    const lastTimestamp = rulesCache?.[rule.ruleId]?.lastTimestamp || 0
+
+    // Fetch logs
+    const logs = await this.youtrackService.getWorkflowLogs(rule.workflowId, rule.ruleId, lastTimestamp + 1, top)
+
+    // If there are new logs, update cache
+    if (logs.length > 0) {
+      // Get the last timestamp
+      const newestTimestamp = logs[logs.length - 1]?.timestamp || 0
+
+      // Initialize rule cache if it doesn't exist
+      if (!rulesCache[rule.ruleId]) {
+        rulesCache[rule.ruleId] = {
+          logs: [],
+          lastTimestamp: 0,
+        }
+      }
+
+      // Update cache
+      rulesCache[rule.ruleId].logs.push(...logs)
+      rulesCache[rule.ruleId].lastTimestamp = newestTimestamp
+    }
+
+    // Return logs
+    return logs
+  }
+
   /**
    * Fetch workflow logs
    * @param workflowRule Workflow rule
    * @param top Number of logs to fetch (if -1, fetch all)
    * @returns Logs for the workflow grouped by rule
    */
-  public async fetchWorkflowRuleLogs(
+  public async fetchWorkflowRulesLogs(
     workflowRule: WorkflowRule[],
     top = -1,
   ): Promise<Array<WorkflowRule & { logs: RuleLog[] }>> {
@@ -48,35 +78,10 @@ export class LogService {
       }
       if (!rule?.ruleId) continue
 
-      // Get last timestamp from cache or use 0 to fetch all logs
-      const lastTimestamp = this._logsCache[rule.workflowId]?.rules[rule.ruleId]?.lastTimestamp || 0
-
-      // Fetch logs
-      const logs = await this.youtrackService.getWorkflowLogs(rule.workflowId, rule.ruleId, lastTimestamp)
-
-      // If there are new logs, update cache
-      if (logs.length > 0) {
-        // Sort logs by timestamp (newest first)
-        logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-
-        // Get the last timestamp
-        const newestTimestamp = logs[0]?.timestamp || 0
-
-        // Initialize rule cache if it doesn't exist
-        if (!this._logsCache[rule.workflowId].rules[rule.ruleId]) {
-          this._logsCache[rule.workflowId].rules[rule.ruleId] = {
-            logs: [],
-            lastTimestamp: 0,
-          }
-        }
-
-        // Update cache
-        this._logsCache[rule.workflowId].rules[rule.ruleId].logs = logs
-        this._logsCache[rule.workflowId].rules[rule.ruleId].lastTimestamp = newestTimestamp
-      }
+      const logs = await this.fetchWorkflowRuleLogs(rule, top)
 
       // Add logs to result
-      result.push({ ...rule, logs: logs.length > top ? logs.slice(0, top) : logs })
+      result.push({ ...rule, logs })
     }
 
     return result
@@ -96,51 +101,11 @@ export class LogService {
     // Stop existing watches
     this.stopWatchingLogs()
 
-    for (const { workflowId, ruleId, workflowName } of workflowRule) {
+    for (const { workflowId, ruleId, workflowName, ruleName } of workflowRule) {
       // Set up interval for this workflow
       const intervalId = setInterval(async () => {
-        try {
-          if (!workflowId || !ruleId) return
-
-          // Get workflow details to get rules
-          const workflows = await this.youtrackService.fetchWorkflows()
-          const workflowDetails = workflows.find((w) => w.id === workflowId)
-
-          if (!workflowDetails || !workflowDetails.rules || workflowDetails.rules.length === 0) return
-
-          for (const rule of workflowDetails.rules) {
-            if (!rule.id) continue
-
-            // Get last timestamp from cache
-            const lastTimestamp = this._logsCache[workflowId]?.rules[rule.id]?.lastTimestamp || 0
-
-            // Fetch new logs
-            const logs = await this.youtrackService.getWorkflowLogs(workflowId, rule.id, lastTimestamp)
-
-            // If there are new logs, update cache and notify
-            if (logs.length > 0) {
-              // Sort logs by timestamp (newest first)
-              logs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-
-              // Get the last timestamp
-              const newestTimestamp = logs[0]?.timestamp || 0
-
-              // Update cache
-              if (this._logsCache[workflowId]?.rules[rule.id]) {
-                this._logsCache[workflowId].rules[rule.id].logs = [
-                  ...logs,
-                  ...this._logsCache[workflowId].rules[rule.id].logs,
-                ]
-                this._logsCache[workflowId].rules[rule.id].lastTimestamp = newestTimestamp
-              }
-
-              // Notify
-              onNewLogs(workflowName, rule.name, logs)
-            }
-          }
-        } catch (error) {
-          console.error(`Error watching logs for workflow "${workflowName}":`, error)
-        }
+        const logs = await this.fetchWorkflowRuleLogs({ workflowId, ruleId, workflowName, ruleName })
+        onNewLogs(workflowName, ruleName, logs)
       }, interval)
 
       this._watchIntervals.set(workflowName, intervalId)

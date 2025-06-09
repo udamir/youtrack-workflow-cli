@@ -114,7 +114,7 @@ export const logsCommand = async (
     spinner.start("Fetching logs...")
 
     // One-time fetch
-    const rulesLogs = await logService.fetchWorkflowRuleLogs(selectedRules, top)
+    const rulesLogs = await logService.fetchWorkflowRulesLogs(selectedRules, top)
     spinner.stop()
 
     for (const { workflowName, ruleName, logs } of rulesLogs) {

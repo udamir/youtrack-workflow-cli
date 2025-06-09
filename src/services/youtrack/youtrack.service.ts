@@ -219,10 +219,10 @@ export class YoutrackService {
    * @param fromTimestamp Timestamp to filter logs from
    * @returns Array of rule logs
    */
-  public async getWorkflowLogs(workflowId: string, ruleId: string, fromTimestamp: number): Promise<RuleLog[]> {
+  public async getWorkflowLogs(workflowId: string, ruleId: string, fromTimestamp = 0, top = -1): Promise<RuleLog[]> {
     try {
       return this.fetch<RuleLog[]>(
-        `/api/admin/workflows/${workflowId}/rules/${ruleId}/logs?$top=-1&fields=id,level,message,presentation,stacktrace,timestamp,username&query=${fromTimestamp}`,
+        `/api/admin/workflows/${workflowId}/rules/${ruleId}/logs?$top=${top}&fields=id,level,message,presentation,stacktrace,timestamp,username&query=${fromTimestamp}`,
       )
     } catch (error) {
       throw new YouTrackApiError(
