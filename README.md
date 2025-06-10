@@ -182,11 +182,11 @@ module.exports = [
 ytw logs [workflow-name...] [--watch]
 ```
 
-View logs for a selected workflow rules. This helps you monitor the behavior of your workflows in real-time.
+View logs for a selected workflow rules. This helps you monitor the behavior of your workflows in real-time. 
 
 Options:
-- `--watch` - watch for file changes and push changes to YouTrack
-- If no workflow names are provided, it will prompt you to select from available workflows in project.
+- `--watch` - watch for new logs in YouTrack and 
+- If workflow names are provided, it will prompt you to select rules from provided workflows.
 
 ### Types
 
