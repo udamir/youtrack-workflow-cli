@@ -185,7 +185,7 @@ ytw logs [workflow-name...] [--watch]
 View logs for a selected workflow rules. This helps you monitor the behavior of your workflows in real-time. 
 
 Options:
-- `--watch` - watch for new logs in YouTrack and 
+- `--watch` - watch for new logs in YouTrack in real-time. 
 - If workflow names are provided, it will prompt you to select rules from provided workflows.
 
 ### Types
