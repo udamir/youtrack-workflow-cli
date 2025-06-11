@@ -143,11 +143,14 @@ program
   .description("Create a new workflow rule from a template")
   .argument("[workflow]", "Workflow name to create rule in")
   .argument("[ruleName]", "Name for the new rule")
-  .argument("[template]", "Template to use for the new rule (action, custom, on-change, on-schedule, state-machine, state-machine-per-type)")
+  .argument(
+    "[template]",
+    "Template to use for the new rule (action, custom, on-change, on-schedule, state-machine, state-machine-per-type)",
+  )
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .action((workflow, ruleName, template, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) => 
-    createCommand(workflow, ruleName, template, { host, token })
+  .action((workflow, ruleName, template, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
+    createCommand(workflow, ruleName, template, { host, token }),
   )
 
 program.parse(process.argv)

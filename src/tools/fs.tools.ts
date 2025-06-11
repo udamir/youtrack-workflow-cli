@@ -46,11 +46,11 @@ export const folderExists = (folderName: string): boolean => {
  * @returns Configuration object
  */
 export const readPackageJson = (): { version: string; ytw: YtwConfig } => {
-  const packageJsonPath = path.join(process.cwd(), 'package.json')
+  const packageJsonPath = path.join(process.cwd(), "package.json")
   if (!fs.existsSync(packageJsonPath)) {
     return { version: "", ytw: { linting: {} } }
   }
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"))
   return { version: packageJson.version, ytw: packageJson.ytw ?? { linting: {} } }
 }
 
@@ -203,7 +203,6 @@ export const isManifestExists = (workflowName: string): boolean => {
   return fs.existsSync(path.join(getWorkflowPath(workflowName), "manifest.json"))
 }
 
-
 /**
  * Write type definition file to disk
  * @param projectName Project name
@@ -234,41 +233,40 @@ export const writeTypeFile = async (projectName: string, content: string): Promi
 export const createWorkflowRule = async (workflow: string, ruleName: string, templateName: string): Promise<string> => {
   // Normalize rule name (remove spaces, make camelCase)
   const normalizedRuleName = ruleName.replace(/\s+/g, "-").toLowerCase()
-  
+
   // Construct file paths
   const workflowDir = getWorkflowPath(workflow)
   const targetFile = path.join(workflowDir, `${normalizedRuleName}.js`)
-  
+
   // Check if template exists
   if (!TEMPLATES[templateName]) {
     throw new Error(`Template '${templateName}' not found. Available templates: ${Object.keys(TEMPLATES).join(", ")}`)
   }
-  
+
   // Check if workflow directory exists
   if (!fs.existsSync(workflowDir)) {
     await fs.promises.mkdir(workflowDir, { recursive: true })
   }
-  
+
   // Get template content from templates.ts
   const templateContent = TEMPLATES[templateName]
-  
+
   // Replace title placeholder with rule name
-  const ruleTitle = ruleName.replace(/-/g, " ")
+  const ruleTitle = ruleName
+    .replace(/-/g, " ")
     .split(" ")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ")
-  
+
   // Replace placeholders in the template
   const commandName = normalizedRuleName.replace(/-/g, "-")
-  
-  const ruleContent = templateContent
-    .replace(/\{TITLE\}/g, ruleTitle)
-    .replace(/\{COMMAND\}/g, commandName)
-  
+
+  const ruleContent = templateContent.replace(/\{TITLE\}/g, ruleTitle).replace(/\{COMMAND\}/g, commandName)
+
   // Write the new rule file
   await fs.promises.writeFile(targetFile, ruleContent)
-  
+
   console.log(`Rule '${ruleName}' created in workflow '${workflow}' using template '${templateName}'`)
-  
+
   return targetFile
 }

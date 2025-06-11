@@ -15,6 +15,7 @@
   "preferGlobal": true,
   "scripts": {
     "build": "tsc",
+    "check": "biome check",
     "lint": "biome lint",
     "format": "biome format",
     "test": "jest",

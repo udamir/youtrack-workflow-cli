@@ -111,11 +111,11 @@ export class TestHelper {
         {
           name: workflowName,
           description: "Test workflow for integration tests",
-          main: "workflow.js"
+          main: "workflow.js",
         },
         null,
-        2
-      )
+        2,
+      ),
     )
 
     return workflowDir

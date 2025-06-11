@@ -33,7 +33,7 @@ exports.rule = entities.Issue.action({
   requirements: {
     // TODO: add requirements
   }
-});`;
+});`
 
 /**
  * Template for custom rule
@@ -48,7 +48,7 @@ export const CUSTOM_TEMPLATE = `/**
 exports.rule = {
   // TODO: implement your custom rule
   title: '{TITLE}'
-};`;
+};`
 
 /**
  * Template for on-change rule
@@ -77,7 +77,7 @@ exports.rule = entities.Issue.onChange({
   requirements: {
     // TODO: add requirements
   }
-});`;
+});`
 
 /**
  * Template for on-schedule rule
@@ -112,7 +112,7 @@ exports.rule = entities.Issue.onSchedule({
   requirements: {
     // TODO: add requirements
   }
-});`;
+});`
 
 /**
  * Template for state machine per type rule
@@ -190,7 +190,7 @@ exports.rule = entities.Issue.stateMachine({
       }
     }
   }
-});`;
+});`
 
 /**
  * Template for state machine rule
@@ -224,16 +224,16 @@ exports.rule = entities.Issue.stateMachine({
       }
     }
   }
-});`;
+});`
 
 /**
  * Map of available templates
  */
 export const TEMPLATES: Record<string, string> = {
-  'action': ACTION_TEMPLATE,
-  'custom': CUSTOM_TEMPLATE,
-  'on-change': ON_CHANGE_TEMPLATE,
-  'on-schedule': ON_SCHEDULE_TEMPLATE,
-  'state-machine-per-type': STATE_MACHINE_PER_TYPE_TEMPLATE,
-  'state-machine': STATE_MACHINE_TEMPLATE
-};
+  action: ACTION_TEMPLATE,
+  custom: CUSTOM_TEMPLATE,
+  "on-change": ON_CHANGE_TEMPLATE,
+  "on-schedule": ON_SCHEDULE_TEMPLATE,
+  "state-machine-per-type": STATE_MACHINE_PER_TYPE_TEMPLATE,
+  "state-machine": STATE_MACHINE_TEMPLATE,
+}

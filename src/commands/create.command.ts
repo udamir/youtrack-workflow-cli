@@ -13,7 +13,7 @@ export const createCommand = async (
   workflowArg: string,
   ruleNameArg: string,
   templateNameArg: string,
-  { host = "", token = "" } = {}
+  { host = "", token = "" } = {},
 ): Promise<void> => {
   // Check if host and token are provided
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
@@ -27,7 +27,7 @@ export const createCommand = async (
     // Create services
     const youtrackService = new YoutrackService(host, token)
     const projectService = new ProjectService(youtrackService)
-    
+
     // Initialize local variables with argument values
     let workflow = workflowArg
     let ruleName = ruleNameArg
@@ -37,12 +37,12 @@ export const createCommand = async (
     if (!workflow) {
       // Get available workflows from the project
       const [projectWorkflows, error] = await tryCatch(projectService.projectWorkflows())
-      
+
       if (error) {
         console.error(error.message)
         return
       }
-      
+
       if (!projectWorkflows || !projectWorkflows.length) {
         console.log("No workflows available in the project. Add workflows first.")
         return
@@ -65,7 +65,7 @@ export const createCommand = async (
 
     // Get available templates
     const availableTemplates = Object.keys(TEMPLATES)
-    
+
     if (availableTemplates.length === 0) {
       console.error("No templates available.")
       return
@@ -108,7 +108,6 @@ export const createCommand = async (
     // Create the rule file from template
     const createdFile = await createWorkflowRule(workflow, ruleName, templateName)
     console.log(`Successfully created rule file: ${createdFile}`)
-
   } catch (error) {
     console.error("Error creating workflow rule:", error)
   }
