@@ -47,7 +47,7 @@ After installation you can use `npx` to run the commands directly:
 npx ytw <command>
 ```
 
-## Utility Commands
+## Commands
 
 The package includes commands that let you synchronize local changes with your YouTrack installation. All commands are accessible through the `ytw` CLI tool. The following
 commands are available:
