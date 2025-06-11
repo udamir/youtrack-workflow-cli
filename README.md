@@ -5,22 +5,18 @@ The **youtrack-workflow-cli** package contains utilities that help you manage Yo
 
 ## Features
 
-- **List Workflows**: View all available YouTrack workflows in your instance
-- **Pull Workflows**: Download and extract YouTrack workflow scripts to your local environment
-- **Push Workflows**: Upload local workflow scripts to your YouTrack instance
-- **Lint Workflows**: Run linting checks on workflow files
-- **Logs with Watch mode**: View logs for a workflow rules
+- **Sync Workflows**: Synchronize workflows (pull and push) between local and YouTrack
+- **Status Tracking**: Track the status of workflows with visual indicators
+- **Create new Workflow Rule**: Create a new workflow rule from a template
+- **Validate Workflows**: Run linting and type checking on workflow files
 - **Generate Types**: Create TypeScript definitions for YouTrack project custom fields and work item types
-- **Type Check**: Run TypeScript type checking on workflow files
-- **Sync Workflows**: Synchronize workflows between local and YouTrack
+- **Logs with Watch mode**: View logs for a workflow rules
 - **Sync with Watch mode**: Watch for file changes and push changes to YouTrack
 - **Script Hooks**: Run custom scripts before and after pushing workflows to YouTrack
-- **Interactive Selection**: Select workflows to work with from interactive prompts
-- **Status Tracking**: Track the status of workflows with visual indicators
 - **Conflict Resolution**: Resolve conflicts between local and server versions
+- **TypeScript Support**: Full TypeScript type definitions for YouTrack scripting API
 - **Secure Authentication**: Use permanent tokens for secure access to YouTrack API
 - **Environment Variables Support**: Configure via command line or environment variables
-- **TypeScript Support**: Full TypeScript type definitions for YouTrack scripting API
 
 ## Quick Start
 
@@ -94,6 +90,18 @@ Uploads the workflows from your local project to your YouTrack installation.
 Options:
 - `--force` - push existing workflows without checking status and confirmation
 - If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
+
+### Create
+
+```bash
+npx ytw create [workflow-name] [rule-name] [template-name]
+```
+
+Creates a new workflow rule from a template in the specified workflow folder.
+
+Options:
+- If no arguments are provided, it will prompt you to select a workflow, enter a rule name, and choose a template.
+- Available templates include: 'action', 'custom', 'on-change', 'on-schedule', 'state-machine', and 'state-machine-per-type'.
 
 ### Remove
 

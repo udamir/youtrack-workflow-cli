@@ -4,6 +4,7 @@ import * as path from "node:path"
 import type { LockFileData, WorkflowFile, WorkflowHash, YtwConfig } from "../types"
 import { calculateWorkflowHash } from "./hash.tools"
 import { LOCK_FILE_NAME } from "../consts"
+import { TEMPLATES } from "../templates"
 
 /**
  * Get the path to the workflow directory
@@ -209,11 +210,65 @@ export const isManifestExists = (workflowName: string): boolean => {
  * @param content Type definition content
  */
 export const writeTypeFile = async (projectName: string, content: string): Promise<void> => {
-  // Create the types directory if it doesn't exist
-  const typesDir = path.resolve(process.cwd(), 'types');
-  await fs.promises.mkdir(typesDir, { recursive: true });
+  const typeFile = path.join(process.cwd(), `${projectName}.d.ts`)
+  const typeDir = path.dirname(typeFile)
+
+  if (!fs.existsSync(typeDir)) {
+    await fs.promises.mkdir(typeDir, { recursive: true })
+  }
+
+  await fs.promises.writeFile(typeFile, content)
+
+  console.log(`Type definitions for project ${projectName} saved to ${typeFile}`)
+
+  return
+}
+
+/**
+ * Create a new workflow rule file from a template
+ * @param workflow Workflow name
+ * @param ruleName Rule name
+ * @param templateName Template name (e.g. "on-change")
+ * @returns Path to the created file
+ */
+export const createWorkflowRule = async (workflow: string, ruleName: string, templateName: string): Promise<string> => {
+  // Normalize rule name (remove spaces, make camelCase)
+  const normalizedRuleName = ruleName.replace(/\s+/g, "-").toLowerCase()
   
-  // Write the type definition file
-  const typeFilePath = path.resolve(typesDir, `${projectName.toLowerCase()}.d.ts`);
-  await fs.promises.writeFile(typeFilePath, content);
+  // Construct file paths
+  const workflowDir = getWorkflowPath(workflow)
+  const targetFile = path.join(workflowDir, `${normalizedRuleName}.js`)
+  
+  // Check if template exists
+  if (!TEMPLATES[templateName]) {
+    throw new Error(`Template '${templateName}' not found. Available templates: ${Object.keys(TEMPLATES).join(", ")}`)
+  }
+  
+  // Check if workflow directory exists
+  if (!fs.existsSync(workflowDir)) {
+    await fs.promises.mkdir(workflowDir, { recursive: true })
+  }
+  
+  // Get template content from templates.ts
+  const templateContent = TEMPLATES[templateName]
+  
+  // Replace title placeholder with rule name
+  const ruleTitle = ruleName.replace(/-/g, " ")
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+  
+  // Replace placeholders in the template
+  const commandName = normalizedRuleName.replace(/-/g, "-")
+  
+  const ruleContent = templateContent
+    .replace(/\{TITLE\}/g, ruleTitle)
+    .replace(/\{COMMAND\}/g, commandName)
+  
+  // Write the new rule file
+  await fs.promises.writeFile(targetFile, ruleContent)
+  
+  console.log(`Rule '${ruleName}' created in workflow '${workflow}' using template '${templateName}'`)
+  
+  return targetFile
 }
