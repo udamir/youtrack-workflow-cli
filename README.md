@@ -43,7 +43,7 @@ After installation you can use `npx` to run the commands directly:
 npx ytw <command>
 ```
 
-## Utility Commands
+## Commands
 
 The package includes commands that let you synchronize local changes with your YouTrack installation. All commands are accessible through the `ytw` CLI tool. The following
 commands are available:
@@ -190,11 +190,11 @@ module.exports = [
 ytw logs [workflow-name...] [--watch]
 ```
 
-View logs for a selected workflow rules. This helps you monitor the behavior of your workflows in real-time.
+View logs for a selected workflow rules. This helps you monitor the behavior of your workflows in real-time. 
 
 Options:
-- `--watch` - watch for file changes and push changes to YouTrack
-- If no workflow names are provided, it will prompt you to select from available workflows in project.
+- `--watch` - watch for new logs in YouTrack in real-time. 
+- If workflow names are provided, it will prompt you to select rules from provided workflows.
 
 ### Types
 
