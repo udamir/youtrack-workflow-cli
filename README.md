@@ -339,6 +339,10 @@ If your YouTrack domain uses an SSL certificate that is issued by a known certif
 
 For more information, [refer to the YouTrack documentation](https://www.jetbrains.com/help/youtrack/incloud/js-workflow-external-editor.html#special-instructions-ssl-certificates).
 
+## Support
+
+[Buy me a coffee](https://buymeacoffee.com/udamir)
+
 # License
 
 MIT
