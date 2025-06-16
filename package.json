@@ -19,7 +19,7 @@
     "lint": "biome lint",
     "format": "biome format",
     "test": "jest",
-    "prepublish": "npm run build && npm run lint && npm run test"
+    "prepublish": "bun run build && bun run lint && bun run test"
   },
   "files": [
     "dist",
@@ -45,7 +45,7 @@
     "@types/jest": "^29.5.14",
     "eslint": "^9.28.0",
     "jest": "^30.0.0",
-    "ts-jest": "^29.3.2",
+    "ts-jest": "^29.4.0",
     "typescript": "^5.8.3"
   },
   "jest": {
