@@ -3,7 +3,7 @@ import ora from "ora"
 
 import { YoutrackService, LogService, type WorkflowRule } from "../services"
 import { isManifestExists } from "../tools/fs.tools"
-import { colorize, formatDate } from "../utils"
+import { colorize, formatDate, prettifyStacktrace } from "../utils"
 import type { RuleLog } from "../types"
 import { COLORS } from "../consts"
 
@@ -33,11 +33,8 @@ const printLogs = (workflowName: string, ruleName: string, logs: RuleLog[]) => {
     )
 
     // Print stacktrace if available
-    if (log.stacktrace && typeof log.stacktrace === "string") {
-      console.log(colorize(`  ${log.stacktrace.replace(/\n/g, "\n  ")}`, COLORS.FG.GRAY))
-    } else if (log.stacktrace) {
-      // Handle case where stacktrace is not a string
-      console.log(colorize(`  ${String(log.stacktrace)}`, COLORS.FG.GRAY))
+    if (log.stacktrace) {
+      console.log(colorize(`${prettifyStacktrace(log.stacktrace, workflowName)}`, COLORS.FG.GRAY))
     }
   }
 }

@@ -124,6 +124,30 @@ export function formatDate(date: Date, includeTime = true): string {
 }
 
 /**
+ * Prettify workflow name and message content by:
+ * 1. Removing 'scripts/' prefix from workflow names if present
+ * 2. Replacing "<js> " with newlines
+ * @param text Text to prettify
+ * @param workflowName Name of the workflow
+ * @returns Prettified text
+ */
+export const prettifyStacktrace = (text: unknown, workflowName: string): string => {
+  // Handle non-string input or undefined/null
+  if (text === null || text === undefined) return ''
+  
+  // Convert to string if it's not already a string
+  const textStr = String(text)
+  
+  // First replace scripts/ prefix with just the workflow name
+  let result = textStr.replace(new RegExp(`scripts\/${workflowName}`, 'g'), workflowName)
+  
+  // Then replace all instances of <js> with newlines, handling both with and without spaces
+  result = result.replace(/,?<js> /g, '\n ')
+  
+  return result
+}
+
+/**
  * Counter for tracking the number of items in each status
  */
 export class StatusCounter {
