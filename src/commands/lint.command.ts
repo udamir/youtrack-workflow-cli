@@ -1,6 +1,6 @@
 import ora from "ora"
 
-import { COLORS, PROGRESS_STATUS, PROGRESS_STATUS_DATA } from "../consts"
+import { COLORS, LINT_STATUS, LINT_STATUS_DATA, PROGRESS_STATUS } from "../consts"
 import { colorize, colorizeIcon, printItemStatus } from "../utils"
 import { readLockFile } from "../tools/fs.tools"
 import { LintingService } from "../services"
@@ -58,14 +58,14 @@ export const printLintSummary = (workflowName: string, errors: string[], warning
   }
 
   console.log(
-    `${colorizeIcon(eCount ? PROGRESS_STATUS_DATA[PROGRESS_STATUS.FAILED] : wCount ? PROGRESS_STATUS_DATA[PROGRESS_STATUS.WARNING] : PROGRESS_STATUS_DATA[PROGRESS_STATUS.SUCCESS])} ${workflowName}: ${message.join(", ")}`,
+    `${colorizeIcon(eCount ? LINT_STATUS_DATA[LINT_STATUS.FAILED] : wCount ? LINT_STATUS_DATA[LINT_STATUS.WARNING] : LINT_STATUS_DATA[LINT_STATUS.OK])} ${workflowName}: ${message.join(", ")}`,
   )
 }
 
 export const printLintResult = (errors: string[], warnings: string[]) => {
   if (errors.length > 0 || warnings.length > 0) {
     // Print detailed errors and warnings
-    errors.forEach((msg) => console.log(`  ${colorizeIcon(PROGRESS_STATUS_DATA[PROGRESS_STATUS.FAILED])} ${msg}`))
-    warnings.forEach((msg) => console.log(`  ${colorizeIcon(PROGRESS_STATUS_DATA[PROGRESS_STATUS.WARNING])} ${msg}`))
+    errors.forEach((msg) => console.log(`  ${colorizeIcon(LINT_STATUS_DATA[LINT_STATUS.FAILED])} ${msg}`))
+    warnings.forEach((msg) => console.log(`  ${colorizeIcon(LINT_STATUS_DATA[LINT_STATUS.WARNING])} ${msg}`))
   }
 }

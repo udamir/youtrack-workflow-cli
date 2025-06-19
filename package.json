@@ -1,6 +1,6 @@
 {
   "name": "youtrack-workflow-cli",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Youtrack workflow CLI",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "check": "biome check",
     "lint": "biome lint",
     "format": "biome format",
-    "prepublish": "bun run build && bun run lint && bun test"
+    "prepublish": "bun run build && bun run check && bun run lint && bun test"
   },
   "files": [
     "dist",

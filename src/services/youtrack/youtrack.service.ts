@@ -55,8 +55,7 @@ export class YoutrackService {
     }
 
     if (!response.ok) {
-      const text = await response.text()
-      throw new YouTrackApiError(null, `Request failed with status ${response.status}: ${path}`, response.status, text)
+      throw new YouTrackApiError(null, `Request failed with status ${response.status}: ${path}`, response.status)
     }
 
     // Parse JSON response
@@ -126,11 +125,11 @@ export class YoutrackService {
    * @throws {YouTrackApiError} If the projects cannot be fetched
    */
   public async fetchProjects(): Promise<ProjectEntity[]> {
-    try {
-      return this.fetch<ProjectEntity[]>("/api/admin/projects?fields=id,name,shortName")
-    } catch (error) {
+    const [data, error] = await tryCatch(this.fetch<ProjectEntity[]>("/api/admin/projects?fields=id,name,shortName"))
+    if (error) {
       throw new YouTrackApiError(error, `Cannot fetch projects from '${this.host}'`)
     }
+    return data
   }
 
   /**
@@ -146,7 +145,7 @@ export class YoutrackService {
     )
 
     if (error) {
-      throw new YouTrackApiError(error, `Cannot fetch custom fields for project '${projectId}' from '${this.host}'`)
+      throw new YouTrackApiError(error, `Cannot fetch custom fields for project from '${this.host}'`)
     }
 
     const customFields: CustomFieldInfo[] = []
@@ -176,16 +175,15 @@ export class YoutrackService {
    * @throws {YouTrackApiError} If the custom field bundle cannot be fetched
    */
   public async getCustomFieldBundle(type: string, bundleId: string): Promise<CustomFieldBundleEntity[]> {
-    try {
-      return this.fetch<CustomFieldBundleEntity[]>(
+    const [data, error] = await tryCatch(
+      this.fetch<CustomFieldBundleEntity[]>(
         `/api/admin/customFieldSettings/bundles/${type}/${bundleId}/values?top=-1&fields=id,name`,
-      )
-    } catch (error) {
-      throw new YouTrackApiError(
-        error,
-        `Cannot fetch custom field bundle for type '${type}' and bundle ID '${bundleId}' from '${this.host}'`,
-      )
+      ),
+    )
+    if (error) {
+      throw new YouTrackApiError(error, `Cannot fetch custom field bundle for type '${type}' from '${this.host}'`)
     }
+    return data
   }
 
   /**
@@ -201,7 +199,7 @@ export class YoutrackService {
     )
 
     if (error) {
-      throw new YouTrackApiError(error, `Cannot fetch work item types for project '${projectId}' from '${this.host}'`)
+      throw new YouTrackApiError(error, `Cannot fetch work item types for project from '${this.host}'`)
     }
 
     // Extract work item type names from the response
@@ -220,15 +218,14 @@ export class YoutrackService {
    * @returns Array of rule logs
    */
   public async getWorkflowLogs(workflowId: string, ruleId: string, fromTimestamp = 0, top = -1): Promise<RuleLog[]> {
-    try {
-      return this.fetch<RuleLog[]>(
+    const [data, error] = await tryCatch(
+      this.fetch<RuleLog[]>(
         `/api/admin/workflows/${workflowId}/rules/${ruleId}/logs?$top=${top}&fields=id,level,message,presentation,stacktrace,timestamp,username&query=${fromTimestamp}`,
-      )
-    } catch (error) {
-      throw new YouTrackApiError(
-        error,
-        `Cannot fetch logs for workflow rule '${ruleId}' in workflow '${workflowId}' from '${this.host}'`,
-      )
+      ),
+    )
+    if (error) {
+      throw new YouTrackApiError(null, `Cannot fetch logs for workflow rule from '${this.host}'`)
     }
+    return data
   }
 }

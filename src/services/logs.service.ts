@@ -1,5 +1,6 @@
 import type { YoutrackService } from "./youtrack"
 import type { RuleLog } from "../types"
+import { tryCatch } from "../utils"
 
 export type WorkflowRule = {
   workflowId: string
@@ -96,6 +97,7 @@ export class LogService {
   public async startWatchingLogs(
     workflowRule: WorkflowRule[],
     onNewLogs: (workflowName: string, ruleName: string, logs: RuleLog[]) => void,
+    onError: (workflowName: string, ruleName: string, message: string) => void,
     interval = 5000,
   ): Promise<void> {
     // Stop existing watches
@@ -104,8 +106,14 @@ export class LogService {
     for (const { workflowId, ruleId, workflowName, ruleName } of workflowRule) {
       // Set up interval for this workflow
       const intervalId = setInterval(async () => {
-        const logs = await this.fetchWorkflowRuleLogs({ workflowId, ruleId, workflowName, ruleName })
-        onNewLogs(workflowName, ruleName, logs)
+        const [logs, error] = await tryCatch(this.fetchWorkflowRuleLogs({ workflowId, ruleId, workflowName, ruleName }))
+        if (error) {
+          onError(workflowName, ruleName, error.message)
+          clearInterval(this._watchIntervals.get(workflowName) as NodeJS.Timeout)
+          this._watchIntervals.delete(workflowName)
+        } else {
+          onNewLogs(workflowName, ruleName, logs)
+        }
       }, interval)
 
       this._watchIntervals.set(workflowName, intervalId)

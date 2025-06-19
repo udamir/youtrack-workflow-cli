@@ -111,6 +111,27 @@ export const PROGRESS_STATUS_DATA = {
   },
 } as const
 
+export const LINT_STATUS = {
+  OK: "ok",
+  WARNING: "warning",
+  FAILED: "failed",
+} as const
+
+export const LINT_STATUS_DATA = {
+  [LINT_STATUS.OK]: {
+    icon: "●",
+    color: COLORS.FG.GREEN,
+  },
+  [LINT_STATUS.WARNING]: {
+    icon: "●",
+    color: COLORS.FG.YELLOW,
+  },
+  [LINT_STATUS.FAILED]: {
+    icon: "●",
+    color: COLORS.FG.RED,
+  },
+} as const
+
 export const SYNC_TYPE = {
   PULL: "pull",
   PUSH: "push",

@@ -1,9 +1,9 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
+import { colorize, formatDate, prettifyStacktrace, tryCatch } from "../utils"
 import { YoutrackService, LogService, type WorkflowRule } from "../services"
 import { isManifestExists } from "../tools/fs.tools"
-import { colorize, formatDate, prettifyStacktrace } from "../utils"
 import type { RuleLog } from "../types"
 import { COLORS } from "../consts"
 
@@ -58,84 +58,103 @@ export const logsCommand = async (
   // Initialize spinner
   const spinner = ora("Fetching workflows...").start()
 
-  try {
-    // Get available workflows
-    const serverWorkflows = await youtrackService.fetchWorkflows()
+  // Get available workflows
+  const [serverWorkflows, err] = await tryCatch(youtrackService.fetchWorkflows())
 
-    const workflows = serverWorkflows.filter((w) => isManifestExists(w.name))
+  if (err) {
+    spinner.fail(`Error fetching workflows: ${err.message}`)
+    return
+  }
 
-    if (workflowNames.length === 0) {
-      // Validate specified workflows
-      const invalidWorkflows = workflowNames.filter((name) => !workflows.some((w) => w.name === name))
+  const workflows = serverWorkflows.filter((w) => isManifestExists(w.name))
 
-      if (invalidWorkflows.length > 0) {
-        spinner.fail(`Invalid workflow names: ${invalidWorkflows.join(", ")}`)
-        return
-      }
+  if (workflowNames.length === 0) {
+    // Validate specified workflows
+    const invalidWorkflows = workflowNames.filter((name) => !workflows.some((w) => w.name === name))
+
+    if (invalidWorkflows.length > 0) {
+      spinner.fail(`Invalid workflow names: ${invalidWorkflows.join(", ")}`)
+      return
     }
+  }
 
-    // If no workflows specified, show selection menu
-    const workflowsToProcess = workflowNames.length
-      ? workflows.filter((w) => workflowNames.includes(w.name))
-      : workflows
-    const workflowRules = workflowsToProcess.reduce(
-      (res, workflow) => {
-        res.push(
-          ...workflow.rules.map((r) => ({
-            name: `${workflow.name}/${r.name}`,
-            value: {
-              workflowId: workflow.id,
-              ruleId: r.id,
-              workflowName: workflow.name,
-              ruleName: r.name,
-            },
-          })),
-        )
-        return res
+  // If no workflows specified, show selection menu
+  const workflowsToProcess = workflowNames.length ? workflows.filter((w) => workflowNames.includes(w.name)) : workflows
+  const workflowRules = workflowsToProcess.reduce(
+    (res, workflow) => {
+      res.push(
+        ...workflow.rules.map((r) => ({
+          name: `${workflow.name}/${r.name}`,
+          value: {
+            workflowId: workflow.id,
+            ruleId: r.id,
+            workflowName: workflow.name,
+            ruleName: r.name,
+          },
+        })),
+      )
+      return res
+    },
+    [] as { name: string; value: WorkflowRule }[],
+  )
+
+  spinner.stop()
+
+  const { selectedRules } = await inquirer.prompt<{ selectedRules: WorkflowRule[] }>([
+    {
+      type: "checkbox",
+      name: "selectedRules",
+      message: "Select rules to view logs for:",
+      choices: workflowRules,
+      validate: (input) => (input.length > 0 ? true : "Please select at least one rule"),
+    },
+  ])
+
+  spinner.start("Fetching logs...")
+
+  // One-time fetch
+  const [rulesLogs, error] = await tryCatch(logService.fetchWorkflowRulesLogs(selectedRules, top))
+  spinner.stop()
+
+  if (error) {
+    spinner.fail(`Error fetching logs: ${error.message}`)
+    return
+  }
+
+  for (const { workflowName, ruleName, logs } of rulesLogs) {
+    printLogs(workflowName, ruleName, logs)
+  }
+
+  if (watch) {
+    // Watch mode
+    spinner.succeed(
+      `Watching logs for workflows: \n  - ${selectedRules.map((r) => `${r.workflowName}/${r.ruleName}`).join(",\n  - ")}`,
+    )
+    console.log("Press Ctrl+C to stop watching\n")
+
+    let watchingCount = selectedRules.length
+
+    // Start watching logs
+    await logService.startWatchingLogs(
+      selectedRules,
+      printLogs,
+      (workflowName, ruleName, message) => {
+        console.error(`Error fetching logs for ${workflowName}/${ruleName}: ${message}`)
+        watchingCount--
+        if (watchingCount === 0) {
+          logService.stopWatchingLogs()
+          console.log("\nStopped watching logs")
+          process.exit(0)
+        }
       },
-      [] as { name: string; value: WorkflowRule }[],
+      interval,
     )
 
-    spinner.stop()
-
-    const { selectedRules } = await inquirer.prompt<{ selectedRules: WorkflowRule[] }>([
-      {
-        type: "checkbox",
-        name: "selectedRules",
-        message: "Select rules to view logs for:",
-        choices: workflowRules,
-        validate: (input) => (input.length > 0 ? true : "Please select at least one rule"),
-      },
-    ])
-
-    spinner.start("Fetching logs...")
-
-    // One-time fetch
-    const rulesLogs = await logService.fetchWorkflowRulesLogs(selectedRules, top)
-    spinner.stop()
-
-    for (const { workflowName, ruleName, logs } of rulesLogs) {
-      printLogs(workflowName, ruleName, logs)
-    }
-
-    if (watch) {
-      // Watch mode
-      spinner.succeed(
-        `Watching logs for workflows: \n  - ${selectedRules.map((r) => `${r.workflowName}/${r.ruleName}`).join(",\n  - ")}`,
-      )
-      console.log("Press Ctrl+C to stop watching\n")
-
-      // Start watching logs
-      await logService.startWatchingLogs(selectedRules, printLogs, interval)
-
-      // Keep process running
-      process.on("SIGINT", () => {
-        logService.stopWatchingLogs()
-        console.log("\nStopped watching logs")
-        process.exit(0)
-      })
-    }
-  } catch (error) {
-    spinner.fail(`Error fetching logs: ${error instanceof Error ? error.message : String(error)}`)
+    // Keep process running
+    process.on("SIGINT", () => {
+      logService.stopWatchingLogs()
+      console.log("\nStopped watching logs")
+      process.exit(0)
+    })
   }
 }
