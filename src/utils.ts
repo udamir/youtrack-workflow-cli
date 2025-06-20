@@ -125,7 +125,7 @@ export function formatDate(date: Date, includeTime = true): string {
 
 /**
  * Prettify workflow name and message content by:
- * 1. Removing 'scripts/' prefix from workflow names if present
+ * 1. Removing '(scripts/' prefix from workflow names if present
  * 2. Replacing "<js> " with newlines
  * 3. Removing character position information from stacktrace lines (keeping only line numbers)
  * @param text Text to prettify
@@ -140,7 +140,7 @@ export const prettifyStacktrace = (text: unknown, workflowName: string): string 
   const textStr = String(text)
 
   // First replace scripts/ prefix with just the workflow name
-  let result = textStr.replace(new RegExp(`scripts\/${workflowName}`, "g"), workflowName)
+  let result = textStr.replace(/\(scripts\//g, workflowName)
 
   // Then replace all instances of <js> with newlines, handling both with and without spaces
   result = result.replace(/,?<js> /g, "\n ")
