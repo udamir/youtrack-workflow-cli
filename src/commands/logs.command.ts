@@ -34,7 +34,7 @@ const printLogs = (workflowName: string, ruleName: string, logs: RuleLog[]) => {
 
     // Print stacktrace if available
     if (log.stacktrace) {
-      console.log(colorize(`${prettifyStacktrace(log.stacktrace, workflowName)}`, COLORS.FG.GRAY))
+      console.log(colorize(`${prettifyStacktrace(log.stacktrace)}`, COLORS.FG.GRAY))
     }
   }
 }
