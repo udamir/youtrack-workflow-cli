@@ -40,7 +40,7 @@
     "ora": "5.4.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.0.2",
     "eslint": "^9.28.0",
     "typescript": "^5.8.3"
   }
