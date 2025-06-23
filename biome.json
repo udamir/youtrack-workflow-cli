@@ -1,11 +1,15 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.0.5/schema.json",
   "files": {
-    "ignore": ["dist/**"],
+    "includes": ["src/**", "test/**"],
     "ignoreUnknown": true
   },
-  "organizeImports": {
-    "enabled": false
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "off"
+      }
+    }
   },
   "linter": {
     "enabled": true,
@@ -30,7 +34,7 @@
         "useExhaustiveDependencies": "info"
       }
     },
-    "ignore": ["test/**/*.ts"]
+    "includes": ["src/**"]
   },
   "vcs": {
     "enabled": true,
@@ -45,7 +49,7 @@
     "indentWidth": 2,
     "lineEnding": "lf",
     "lineWidth": 120,
-    "ignore": ["package.json"]
+    "includes": ["src/**", "test/**"]
   },
   "javascript": {
     "formatter": {

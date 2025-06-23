@@ -170,7 +170,7 @@ export const readLockFile = (): LockFileData => {
   try {
     const data = fs.readFileSync(lockFilePath, "utf-8")
     return JSON.parse(data) as LockFileData
-  } catch (error) {
+  } catch (_error) {
     // If file doesn't exist or can't be parsed, return empty data
     return {
       workflows: {},

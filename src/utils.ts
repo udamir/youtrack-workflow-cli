@@ -147,7 +147,7 @@ export const prettifyStacktrace = (text: unknown, fileContent: string): string =
 
   // Convert absolute character positions to positions within lines
   // Example: action(templates/action-template.js:26:911-926) -> action(templates/action-template.js:26:10)
-  result = result.replace(/(\.js:(\d+)):(\d+)-(\d+)/g, (match, fileLinePart, lineNum, startChar, endChar) => {
+  result = result.replace(/(\.js:(\d+)):(\d+)-(\d+)/g, (_match, fileLinePart, lineNum, startChar) => {
     const lines = fileContent.substring(0, Number.parseInt(startChar, 10)).split("\n")
     return `${fileLinePart}:${lines[Number.parseInt(lineNum, 10) - 1]?.length ?? 0} `
   })

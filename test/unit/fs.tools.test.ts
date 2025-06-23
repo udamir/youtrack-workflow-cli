@@ -1,6 +1,7 @@
-import fs from "fs"
-import path from "path"
-import os from "os"
+import fs from "node:fs"
+import path from "node:path"
+import os from "node:os"
+import { describe, it, beforeEach, afterEach, beforeAll, afterAll, expect, mock, spyOn } from "bun:test"
 
 import { readLocalWorkflowFiles, localWorkflowFolderHash, writeLocalWorkflowFiles } from "../../src/tools/fs.tools"
 import { readLockFile, writeLockFile, getLockFilePath } from "../../src/tools/fs.tools"
@@ -9,12 +10,12 @@ import type { LockFileData } from "../../src/types"
 describe("fs.tools", () => {
   beforeEach(() => {
     // Mock process.cwd() to return the temp directory
-    jest.spyOn(process, "cwd").mockImplementation(() => os.tmpdir())
+    spyOn(process, "cwd").mockImplementation(() => os.tmpdir())
   })
 
   afterEach(() => {
     // Restore original cwd
-    jest.spyOn(process, "cwd").mockRestore()
+    spyOn(process, "cwd").mockRestore()
   })
 
   describe("readLocalWorkflowFiles", () => {
@@ -326,7 +327,7 @@ describe("fs.tools", () => {
 
         try {
           // Mock process.cwd to return the temp directory
-          process.cwd = jest.fn().mockReturnValue(tempDir)
+          process.cwd = mock().mockReturnValue(tempDir)
 
           // Test the function
           const lockPath = getLockFilePath()
@@ -349,7 +350,7 @@ describe("fs.tools", () => {
           fs.writeFileSync(lockFilePath, JSON.stringify(mockLockData), "utf-8")
 
           // Mock process.cwd to return the temp directory
-          process.cwd = jest.fn().mockReturnValue(tempDir)
+          process.cwd = mock().mockReturnValue(tempDir)
 
           // Test the function
           const result = readLockFile()
@@ -368,7 +369,7 @@ describe("fs.tools", () => {
 
         try {
           // Mock process.cwd to return the temp directory
-          process.cwd = jest.fn().mockReturnValue(tempDir)
+          process.cwd = mock().mockReturnValue(tempDir)
 
           // The lock file doesn't exist yet
 
@@ -391,7 +392,7 @@ describe("fs.tools", () => {
 
         try {
           // Mock process.cwd to return the temp directory
-          process.cwd = jest.fn().mockReturnValue(tempDir)
+          process.cwd = mock().mockReturnValue(tempDir)
 
           // Test the function
           writeLockFile(mockLockData)
@@ -415,8 +416,8 @@ describe("fs.tools", () => {
 
         try {
           // Mock process.cwd to return a non-existent directory
-          const nonExistentDir = path.join(os.tmpdir(), "non-existent-dir-" + Math.random().toString(36).substring(7))
-          process.cwd = jest.fn().mockReturnValue(nonExistentDir)
+          const nonExistentDir = path.join(os.tmpdir(), `non-existent-dir-${Math.random().toString(36).substring(7)}`)
+          process.cwd = mock().mockReturnValue(nonExistentDir)
 
           // Test the function - should throw since the directory doesn't exist
           expect(() => writeLockFile(mockLockData)).toThrow()

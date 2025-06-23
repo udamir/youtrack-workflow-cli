@@ -1,3 +1,4 @@
+import { afterAll, beforeAll, describe, expect, it } from "bun:test"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import * as crypto from "node:crypto"
@@ -32,7 +33,7 @@ describe("ProjectService Integration", () => {
 
     // Create a test workflow directory
     await helper.createWorkflowDir(testWorkflowName)
-  }, 30000) // Allow 30 seconds for setup
+  })
 
   afterAll(async () => {
     await helper.cleanup()
@@ -184,7 +185,7 @@ describe("ProjectService Integration", () => {
         const updatedCache = await projectService.cacheLocalWorkflow(testWorkflowName)
         expect(updatedCache).toBeDefined()
         expect(updatedCache?.hash).not.toEqual(initialCache?.hash)
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        // biome-ignore lint/style/noNonNullAssertion: false positive
         expect(updatedCache?.files?.length).toBeGreaterThan(initialCache!.files.length)
       } finally {
         // 4. Clean up by removing the new file

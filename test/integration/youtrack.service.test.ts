@@ -1,5 +1,6 @@
 import { YoutrackService } from "../../src/services/youtrack"
 import { TestHelper } from "./test-helpers"
+import { afterAll, beforeAll, describe, expect, it } from "bun:test"
 import * as crypto from "node:crypto"
 import * as fs from "node:fs"
 import * as path from "node:path"
@@ -20,7 +21,7 @@ describe("YoutrackService Integration", () => {
     const youtrackToken = process.env.YOUTRACK_TOKEN || ""
 
     service = new YoutrackService(youtrackHost, youtrackToken)
-  }, 30000) // Allow 30 seconds for setup
+  })
 
   afterAll(async () => {
     await helper.cleanup()
@@ -94,7 +95,7 @@ describe("YoutrackService Integration", () => {
           if (packageData.main) {
             console.log(`Entry point is: ${packageData.main}`)
           }
-        } catch (e) {
+        } catch (_e) {
           console.error("Failed to parse package.json")
         }
       }
@@ -139,7 +140,7 @@ describe("YoutrackService Integration", () => {
 
         // Verify files were saved
         const dirContents = await fs.promises.readdir(workflowDir)
-        expect(dirContents.length).toBe(workflowFiles?.length)
+        expect(dirContents.length).toBe(workflowFiles!.length)
 
         // For real workflows, we expect certain patterns, but we'll avoid hard assertions
         // since we're working with real data that might have different structures

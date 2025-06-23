@@ -97,7 +97,7 @@ export class LintingService {
 
         return acc
       }, result)
-    } catch (parseError: any) {
+    } catch (_parseError: any) {
       return {
         errors: [`${workflowName}: Error parsing ESLint output: ${execResult || "Unknown error"}`],
         warnings: [],

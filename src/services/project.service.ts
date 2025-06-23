@@ -94,7 +94,7 @@ export class ProjectService {
         hash,
         fileHashes: files,
       }
-    } catch (error) {
+    } catch (_error) {
       this._localCache[name] = null
     }
 
@@ -156,7 +156,7 @@ export class ProjectService {
           fileHashes: files,
         }
       }
-    } catch (error) {
+    } catch (_error) {
       this._serverCache[name] = null
     }
 
@@ -208,7 +208,7 @@ export class ProjectService {
             syncStatus = SYNC_STATUS.SKIPPED
           }
         }
-      } catch (error) {
+      } catch (_error) {
         syncStatus = SYNC_STATUS.FAILED
       }
       eventHandlers.onSync?.(workflow, syncStatus, index++)
@@ -358,7 +358,7 @@ export class ProjectService {
     for (const { name } of _workflows) {
       try {
         statuses[name] = await this.workflowStatus(name)
-      } catch (error) {
+      } catch (_error) {
         statuses[name] = WORKFLOW_STATUS.UNKNOWN
       }
       onStatus?.(name, statuses[name], index++)

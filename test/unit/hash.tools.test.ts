@@ -1,3 +1,4 @@
+import { describe, it, expect } from "bun:test"
 import { calculateHash, calculateWorkflowHash } from "../../src/tools/hash.tools"
 import type { WorkflowFile } from "../../src/types"
 

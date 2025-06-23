@@ -3,7 +3,6 @@ import ora from "ora"
 import { PROGRESS_STATUS, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../consts"
 import { isError, printItemStatus, progressStatus, StatusCounter, tryCatch } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
-import { isManifestExists } from "../tools/fs.tools"
 import type { WorkflowStatus } from "../types"
 
 /**
