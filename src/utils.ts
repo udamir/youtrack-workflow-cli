@@ -125,13 +125,14 @@ export function formatDate(date: Date, includeTime = true): string {
 
 /**
  * Prettify workflow name and message content by:
- * 1. Removing '(scripts/' prefix from workflow names if present
+ * 1. Removing 'scripts/' prefix from workflow names if present
  * 2. Replacing "<js> " with newlines
- * 3. Removing character position information from stacktrace lines (keeping only line numbers)
+ * 3. Converting character position information in stacktrace lines to position within the line
  * @param text Text to prettify
+ * @param fileContent File content to calculate position within lines
  * @returns Prettified text
  */
-export const prettifyStacktrace = (text: unknown): string => {
+export const prettifyStacktrace = (text: unknown, fileContent: string): string => {
   // Handle non-string input or undefined/null
   if (text === null || text === undefined) return ""
 
@@ -139,14 +140,17 @@ export const prettifyStacktrace = (text: unknown): string => {
   const textStr = String(text)
 
   // First replace scripts/ prefix with just the workflow name
-  let result = textStr.replace(/\(scripts\//g, "(")
+  let result = textStr.replace(/\(scripts\//g, "( ")
 
   // Then replace all instances of <js> with newlines, handling both with and without spaces
   result = result.replace(/,?<js> /g, "\n ")
 
-  // Remove character position information from stacktrace lines, keeping only line numbers
-  // Example: action(templates/action-template.js:26:911-926) -> action(templates/action-template.js:26)
-  result = result.replace(/(\.js:\d+):\d+-\d+/g, "$1")
+  // Convert absolute character positions to positions within lines
+  // Example: action(templates/action-template.js:26:911-926) -> action(templates/action-template.js:26:10)
+  result = result.replace(/(\.js:(\d+)):(\d+)-(\d+)/g, (match, fileLinePart, lineNum, startChar, endChar) => {
+    const lines = fileContent.substring(0, Number.parseInt(startChar, 10)).split("\n")
+    return `${fileLinePart}:${lines[Number.parseInt(lineNum, 10) - 1]?.length ?? 0} `
+  })
 
   return result
 }

@@ -3,7 +3,7 @@ import ora from "ora"
 
 import { colorize, formatDate, prettifyStacktrace, tryCatch } from "../utils"
 import { YoutrackService, LogService, type WorkflowRule } from "../services"
-import { isManifestExists } from "../tools/fs.tools"
+import { isManifestExists, readLocalWorkflowFile } from "../tools/fs.tools"
 import type { RuleLog } from "../types"
 import { COLORS } from "../consts"
 
@@ -22,6 +22,7 @@ const LOG_LEVEL_COLORS: Record<string, string> = {
  * @param logs Array of log entries
  */
 const printLogs = (workflowName: string, ruleName: string, logs: RuleLog[]) => {
+  let fileContent = ""
   for (const log of logs) {
     const level = log.level || "INFO"
     const timestamp = log.timestamp ? formatDate(new Date(log.timestamp)) : "--"
@@ -34,7 +35,10 @@ const printLogs = (workflowName: string, ruleName: string, logs: RuleLog[]) => {
 
     // Print stacktrace if available
     if (log.stacktrace) {
-      console.log(colorize(`${prettifyStacktrace(log.stacktrace)}`, COLORS.FG.GRAY))
+      if (!fileContent) {
+        fileContent = readLocalWorkflowFile(workflowName, `${ruleName}.js`)
+      }
+      console.log(colorize(`${prettifyStacktrace(log.stacktrace, fileContent)}`, COLORS.FG.GRAY))
     }
   }
 }
@@ -97,6 +101,11 @@ export const logsCommand = async (
     },
     [] as { name: string; value: WorkflowRule }[],
   )
+
+  if (workflowRules.length === 0) {
+    spinner.fail("No workflows found. Add workflows first.")
+    return
+  }
 
   spinner.stop()
 

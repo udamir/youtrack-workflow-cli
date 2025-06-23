@@ -108,10 +108,10 @@ export const readLocalWorkflowFiles = async (workflowName: string): Promise<Work
  * @param fileName File name
  * @returns File content in string
  */
-export const readLocalWorkflowFile = async (workflowName: string, fileName: string): Promise<string> => {
+export const readLocalWorkflowFile = (workflowName: string, fileName: string): string => {
   const sourcePath = getWorkflowPath(workflowName)
   const fullPath = path.join(sourcePath, fileName)
-  return fs.promises.readFile(fullPath, "utf-8")
+  return fs.readFileSync(fullPath, { encoding: "utf-8" })
 }
 
 /**
