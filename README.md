@@ -76,7 +76,7 @@ npx ytw pull [workflow-name...] [--force]
 Downloads the specified workflows from your YouTrack installation to your local project.
 
 Options:
-- `--force` - pull existing workflows without checking status and confirmation
+- `-f, --force` - pull existing workflows without checking status and confirmation
 - If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
 
 ### Push
@@ -88,7 +88,7 @@ npx ytw push [workflow-name...] [--force]
 Uploads the workflows from your local project to your YouTrack installation.
 
 Options:
-- `--force` - push existing workflows without checking status and confirmation
+- `-f, --force` - push existing workflows without checking status and confirmation
 - If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
 
 ### Create
@@ -138,11 +138,11 @@ Synchronizes workflows between your local project and YouTrack. This command:
 - Allows you to resolve conflicts between local and YouTrack versions
 
 Options:
-- `--force [strategy]` - synchronize workflows without checking status and with specified strategy (skip, pull, push)
-- `--watch` - watch for file changes and push changes to YouTrack
-- `--lint` - run linting checks on workflows
-- `--type-check` - run TypeScript type checking
-- `--max-warnings [number]` - maximum allowed warnings
+- `-f, --force [strategy]` - synchronize workflows without checking status and with specified strategy (skip, pull, push)
+- `-w, --watch` - watch for file changes and push changes to YouTrack
+- `-l, --lint` - run linting checks on workflows
+- `-t, --type-check` - run TypeScript type checking
+- `-m, --max-warnings [number]` - maximum allowed warnings
 - If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
 
 ### Lint
@@ -154,7 +154,7 @@ ytw lint [workflow-name...] [--type-check]
 Runs linting checks on workflow files. This helps maintain code quality and catch potential errors early.
 
 Options:
-- `--type-check` - run TypeScript type checking
+- `-t, --type-check` - run TypeScript type checking
 - If no workflow names are provided, it will lint all workflows in your project.
 
 
@@ -187,14 +187,16 @@ module.exports = [
 ### Logs
 
 ```bash
-ytw logs [workflow-name...] [--watch]
+ytw logs [workflow-name...] [--watch [ms]] [--all] [--top <number>]
 ```
 
 View logs for a selected workflow rules. This helps you monitor the behavior of your workflows in real-time. 
 
 Options:
-- `--watch` - watch for new logs in YouTrack in real-time. 
-- If workflow names are provided, it will prompt you to select rules from provided workflows.
+- `-w, --watch [ms]` - watch for new logs in YouTrack in real-time with interval in milliseconds, default: 5000ms.
+- `-a, --all` - fetch all logs for rules of all workflows in project
+- `-t, --top [number]` - number of logs to fetch per rule, default: 10
+- If workflow names are provided and `--all` is not specified, it will prompt you to select rules from provided workflows.
 
 ### Types
 

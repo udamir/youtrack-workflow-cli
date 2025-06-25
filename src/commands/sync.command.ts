@@ -67,7 +67,7 @@ export const syncCommand = async (
       case SYNC_STATUS.FAILED:
         return printItemStatus(workflow, PROGRESS_STATUS.FAILED, "Failed to sync")
       case SYNC_STATUS.SYNCED:
-        return printItemStatus(workflow, PROGRESS_STATUS.SUCCESS, "Already in sync")
+        return printItemStatus(workflow, PROGRESS_STATUS.INFO, "Already in sync")
     }
   }
 

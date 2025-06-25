@@ -42,7 +42,7 @@ program
   .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .option("--force", "Force pull without checking status and confirmation")
+  .option("-f,--force", "Force pull without checking status and confirmation")
   .action((workflow: string[], { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, force = false }) =>
     pullCommand(workflow, { host, token, force }),
   )
@@ -53,7 +53,7 @@ program
   .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .option("--force", "Force push without checking status and confirmation")
+  .option("-f, --force", "Force push without checking status and confirmation")
   .action((workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, force = false }) =>
     pushCommand(workflows, { host, token, force }),
   )
@@ -64,15 +64,15 @@ program
   .argument("[workflow...]", "Workflow name(s) or @ to select interactively")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
-  .option("--watch", "Watch for file changes and push changes to YouTrack")
+  .option("-w, --watch", "Watch for file changes and push changes to YouTrack")
   .option(
     "--force [strategy]",
     "Force conflict resolution without prompting with specified strategy (skip, pull, push)",
     SYNC_TYPE.SKIP,
   )
-  .option("--lint", "Linting validation before pushing changes to YouTrack")
-  .option("--type-check", "Run TypeScript type checking")
-  .option("--max-warnings [number]", "Maximum allowed warnings", Number.parseInt, 10)
+  .option("-l, --lint", "Linting validation before pushing changes to YouTrack")
+  .option("-t, --type-check", "Run TypeScript type checking")
+  .option("-m, --max-warnings [number]", "Maximum allowed warnings", Number.parseInt, 10)
   .action(
     (workflows, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN, watch, force, lint, typeCheck, maxWarnings }) =>
       syncCommand(workflows, { host, token, watch, force, lint, typeCheck, maxWarnings }),
@@ -121,21 +121,15 @@ program
   .description("Fetch and display workflow logs")
   .argument("[workflows...]", "Workflow names to fetch logs for")
   .option("-t, --top <number>", "Number of logs to fetch per rule", Number.parseInt, 10)
-  .option("-w, --watch", "Watch for new logs", false)
-  .option("-i, --interval <ms>", "Watch interval in milliseconds", Number.parseInt, 5000)
+  .option("-w, --watch [ms]", "Watch for new logs", Number.parseInt)
+  .option("-a, --all", "Fetch all logs for rules of all workflows in project")
   .option("--host [host]", "YouTrack host")
   .option("--token [token]", "YouTrack token")
   .action(
     (
       workflows: string[],
-      {
-        host = process.env.YOUTRACK_BASE_URL || "",
-        token = process.env.YOUTRACK_TOKEN || "",
-        top = 10,
-        watch = false,
-        interval = 5000,
-      },
-    ) => logsCommand(workflows, { host, token, top, watch, interval }),
+      { host = process.env.YOUTRACK_BASE_URL || "", token = process.env.YOUTRACK_TOKEN || "", top, watch, all = false },
+    ) => logsCommand(workflows, { host, token, top, watch: watch === true ? 5000 : watch, all }),
   )
 
 program

@@ -48,13 +48,7 @@ const printLogs = (workflowName: string, ruleName: string, logs: RuleLog[]) => {
  */
 export const logsCommand = async (
   workflowNames: string[],
-  {
-    host,
-    token,
-    top = 10,
-    watch = false,
-    interval = 5000,
-  }: { host: string; token: string; top: number; watch: boolean; interval: number },
+  { host, token, top, watch, all }: { host: string; token: string; top: number; watch?: number; all: boolean },
 ): Promise<void> => {
   const youtrackService = new YoutrackService(host, token)
   const logService = new LogService(youtrackService)
@@ -109,15 +103,21 @@ export const logsCommand = async (
 
   spinner.stop()
 
-  const { selectedRules } = await inquirer.prompt<{ selectedRules: WorkflowRule[] }>([
-    {
-      type: "checkbox",
-      name: "selectedRules",
-      message: "Select rules to view logs for:",
-      choices: workflowRules,
-      validate: (input) => (input.length > 0 ? true : "Please select at least one rule"),
-    },
-  ])
+  const selectedRules: WorkflowRule[] = []
+  if (all) {
+    selectedRules.push(...workflowRules.map(({ value }) => value))
+  } else {
+    const { selectedRules: selectedRulesFromPrompt } = await inquirer.prompt<{ selectedRules: WorkflowRule[] }>([
+      {
+        type: "checkbox",
+        name: "selectedRules",
+        message: "Select rules to view logs for:",
+        choices: workflowRules,
+        validate: (input) => (input.length > 0 ? true : "Please select at least one rule"),
+      },
+    ])
+    selectedRules.push(...selectedRulesFromPrompt)
+  }
 
   spinner.start("Fetching logs...")
 
@@ -137,7 +137,7 @@ export const logsCommand = async (
   if (watch) {
     // Watch mode
     spinner.succeed(
-      `Watching logs for workflows: \n  - ${selectedRules.map((r) => `${r.workflowName}/${r.ruleName}`).join(",\n  - ")}`,
+      `Watching logs for workflows (${watch}ms interval): \n  - ${selectedRules.map((r) => `${r.workflowName}/${r.ruleName}`).join(",\n  - ")}`,
     )
     console.log("Press Ctrl+C to stop watching\n")
 
@@ -156,7 +156,7 @@ export const logsCommand = async (
           process.exit(0)
         }
       },
-      interval,
+      watch,
     )
 
     // Keep process running
