@@ -1,14 +1,17 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { isError, printItemStatus, progressStatus, StatusCounter, tryCatch } from "../utils"
+import { isError, printNewVersionWarning, progressStatus, StatusCounter, tryCatch } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
+import { printItemStatus } from "../tools/console.tools"
 
 /**
  * Command to remove workflows from a project
  * @returns Results of the command execution
  */
 export const removeCommand = async (workflows: string[] = [], { host = "", token = "" } = {}): Promise<void> => {
+  await printNewVersionWarning()
+
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
   }

@@ -1,10 +1,11 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { isError, printItemStatus, StatusCounter, tryCatch } from "../utils"
+import { isError, printNewVersionWarning, StatusCounter, tryCatch } from "../utils"
 import { WorkflowError, WorkflowNotFoundError } from "../errors"
 import { YoutrackService, ProjectService } from "../services"
 import { PROGRESS_STATUS, WORKFLOW_STATUS } from "../consts"
+import { printItemStatus } from "../tools/console.tools"
 
 /**
  * Command for pulling workflows from YouTrack
@@ -13,6 +14,8 @@ export const pullCommand = async (
   workflows: string[] = [],
   { host = "", token = "", force = false } = {},
 ): Promise<void> => {
+  await printNewVersionWarning()
+
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
   }

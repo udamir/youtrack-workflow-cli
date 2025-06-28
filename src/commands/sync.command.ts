@@ -3,11 +3,12 @@ import ora from "ora"
 
 import { YoutrackService, ProjectService, LintingService, WatchService } from "../services"
 import { PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
-import { isError, printItemStatus, StatusCounter, tryCatch } from "../utils"
+import { isError, StatusCounter, tryCatch, printNewVersionWarning } from "../utils"
 import { printLintResult, printLintSummary } from "./lint.command"
+import { printItemStatus } from "../tools/console.tools"
 import { printWorkflowStatus } from "./status.command"
-import type { SyncStatus, SyncType } from "../types"
 import { executeScript } from "../tools/script.tools"
+import type { SyncStatus, SyncType } from "../types"
 import { readPackageJson } from "../tools/fs.tools"
 
 type SyncCommandOptions = {
@@ -29,6 +30,8 @@ export const syncCommand = async (
   workflows: string[] = [],
   { host = "", token = "", watch, force, lint = false, typeCheck = false, maxWarnings = 10 }: SyncCommandOptions = {},
 ): Promise<void> => {
+  await printNewVersionWarning()
+
   // Validate required parameters
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return

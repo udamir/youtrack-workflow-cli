@@ -1,8 +1,9 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { colorize, isError, printItemStatus, progressStatus, StatusCounter } from "../utils"
+import { colorize, isError, printNewVersionWarning, progressStatus, StatusCounter } from "../utils"
 import { YoutrackService, TypeScriptService } from "../services"
+import { printItemStatus } from "../tools/console.tools"
 import { COLORS } from "../consts"
 
 /**
@@ -11,6 +12,8 @@ import { COLORS } from "../consts"
  * @param options Command options
  */
 export const typesCommand = async (projects: string[] = [], { host = "", token = "" } = {}): Promise<void> => {
+  await printNewVersionWarning()
+
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
   }

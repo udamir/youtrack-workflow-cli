@@ -1,9 +1,9 @@
 import inquirer from "inquirer"
 
 import { createWorkflowRule, isManifestExists } from "../tools/fs.tools"
+import { isError, printNewVersionWarning, tryCatch } from "../utils"
 import { ProjectService, YoutrackService } from "../services"
 import { TEMPLATES } from "../templates"
-import { isError, tryCatch } from "../utils"
 
 /**
  * Command to create a new workflow rule from a template
@@ -15,6 +15,8 @@ export const createCommand = async (
   templateNameArg: string,
   { host = "", token = "" } = {},
 ): Promise<void> => {
+  await printNewVersionWarning()
+
   // Check if host and token are provided
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return

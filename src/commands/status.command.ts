@@ -1,8 +1,9 @@
 import ora from "ora"
 
+import { isError, printNewVersionWarning, progressStatus, StatusCounter, tryCatch } from "../utils"
 import { PROGRESS_STATUS, WORKFLOW_STATUS, WORKFLOW_STATUS_DATA } from "../consts"
-import { isError, printItemStatus, progressStatus, StatusCounter, tryCatch } from "../utils"
 import { YoutrackService, ProjectService } from "../services"
+import { printItemStatus } from "../tools/console.tools"
 import type { WorkflowStatus } from "../types"
 
 /**
@@ -10,6 +11,8 @@ import type { WorkflowStatus } from "../types"
  * @param options Command options
  */
 export const statusCommand = async ({ host = "", token = "" } = {}): Promise<void> => {
+  await printNewVersionWarning()
+
   if (isError(!token, "YOUTRACK_TOKEN is not defined")) {
     return
   }

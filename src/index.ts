@@ -14,8 +14,8 @@ import {
   addCommand,
   createCommand,
 } from "./commands"
-import { readPackageJson } from "./tools/fs.tools"
 import { SYNC_TYPE } from "./consts"
+const pkg = require("../package.json")
 
 dotenv.config()
 
@@ -27,7 +27,7 @@ const { YOUTRACK_BASE_URL = "", YOUTRACK_TOKEN = "" } = process.env
 program
   .name("ytw")
   .description("YouTrack Workflow CLI - Manage YouTrack workflows")
-  .version(readPackageJson()?.version || "Unknown")
+  .version(pkg.version || "Unknown")
 
 program
   .command("list")

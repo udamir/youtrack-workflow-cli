@@ -1,11 +1,15 @@
 import ora from "ora"
 
 import { COLORS, LINT_STATUS, LINT_STATUS_DATA, PROGRESS_STATUS } from "../consts"
-import { colorize, colorizeIcon, printItemStatus } from "../utils"
+import { printItemStatus } from "../tools/console.tools"
+import { printNewVersionWarning } from "../utils"
+import { colorize, colorizeIcon } from "../utils"
 import { readLockFile } from "../tools/fs.tools"
 import { LintingService } from "../services"
 
 export const lintCommand = async (workflow: string[], { typeCheck }: { typeCheck: boolean }) => {
+  await printNewVersionWarning()
+
   // Load configuration from package.json
   const lintingService = new LintingService({
     enableEslint: true,

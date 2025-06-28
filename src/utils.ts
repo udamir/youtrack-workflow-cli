@@ -1,5 +1,28 @@
-import { COLORS, PROGRESS_STATUS, PROGRESS_STATUS_DATA, WORKFLOW_STATUS } from "./consts"
 import type { ProgressStatus, ActionResult, WorkflowStatus } from "./types"
+import { COLORS, PROGRESS_STATUS, WORKFLOW_STATUS } from "./consts"
+import { printFrame } from "./tools/console.tools"
+const version = require("../package.json").version
+
+/**
+ * Prints a warning message if a newer version of the package is available
+ */
+export const printNewVersionWarning = async () => {
+  const response = await fetch("https://registry.npmjs.org/youtrack-workflow-cli")
+  const data = await response.json()
+  const latest = data?.["dist-tags"]?.latest || ""
+  const newVersion = latest.localeCompare(version) > 0 ? latest : ""
+
+  if (!newVersion) return
+
+  const updateCommand = `npm install -g youtrack-workflow-cli@${newVersion}`
+  const repoUrl = "https://github.com/udamir/youtrack-workflow-cli"
+
+  printFrame([
+    `Update available! ${`${colorize(version, COLORS.FG.RED)} → ${colorize(newVersion, COLORS.FG.GREEN)}`}`,
+    `Changelog: ${repoUrl}/CHANGELOG.md`,
+    `Run "${colorize(updateCommand, COLORS.FG.CYAN)}" to update`,
+  ])
+}
 
 /**
  * Returns an action result with a success status
@@ -69,17 +92,6 @@ export const isError = (condition: unknown, message: string): boolean => {
   }
   console.error(message)
   return true
-}
-
-/**
- * Print the status of a workflow or project
- * @param item Name of the workflow or project
- * @param status Status of the workflow or project
- * @param message Message to display
- */
-export const printItemStatus = (item: string, status: ProgressStatus, message: string, shift = 0) => {
-  const statusData = PROGRESS_STATUS_DATA[status]
-  console.log(`${" ".repeat(shift)}${colorizeIcon(statusData)} ${item}: ${colorize(message, statusData.color)}`)
 }
 
 /**
