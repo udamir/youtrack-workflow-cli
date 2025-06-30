@@ -35,7 +35,7 @@
   "dependencies": {
     "chokidar": "^4.0.3",
     "commander": "^14.0.0",
-    "dotenv": "^16.5.0",
+    "dotenv": "^17.0.0",
     "inquirer": "^12.6.0",
     "jszip": "^3.10.1",
     "ora": "5.4.1"
