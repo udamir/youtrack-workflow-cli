@@ -226,6 +226,12 @@ export class ProjectService {
       throw new WorkflowNotFoundError(name)
     }
     const { files, ...rest } = data
+
+    // Delete old workflow files before writing new ones
+    if (isLocalWorkflow(name)) {
+      await deleteLocalWorkflowFiles(name)
+    }
+
     await writeLocalWorkflowFiles(files, name)
 
     // Update lock file with server data

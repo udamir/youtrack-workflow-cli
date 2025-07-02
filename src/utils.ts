@@ -17,9 +17,11 @@ export const printNewVersionWarning = async () => {
   const updateCommand = `npm install -g youtrack-workflow-cli@${newVersion}`
   const repoUrl = "https://github.com/udamir/youtrack-workflow-cli"
 
+  const [major, minor] = newVersion.split(".")
+
   printFrame([
     `Update available! ${`${colorize(version, COLORS.FG.RED)} → ${colorize(newVersion, COLORS.FG.GREEN)}`}`,
-    `Changelog: ${repoUrl}/CHANGELOG.md`,
+    `Changelog: ${repoUrl}/releases/tag/${major}.${minor}.0`,
     `Run "${colorize(updateCommand, COLORS.FG.CYAN)}" to update`,
   ])
 }
