@@ -209,18 +209,20 @@ export const isManifestExists = (workflowName: string): boolean => {
  * @param content Type definition content
  */
 export const writeTypeFile = async (projectName: string, content: string): Promise<void> => {
-  const typeFile = path.join(process.cwd(), `${projectName}.d.ts`)
-  const typeDir = path.dirname(typeFile)
+  // Get configuration from package.json
+  const { ytw } = readPackageJson()
+
+  // Use custom folder, config folder, or default "/types"
+  const typesFolder = ytw.typesFolder || "/types"
+  const typeDir = path.join(process.cwd(), typesFolder)
+
+  const typeFile = path.join(typeDir, `${projectName.toLocaleLowerCase()}.d.ts`)
 
   if (!fs.existsSync(typeDir)) {
     await fs.promises.mkdir(typeDir, { recursive: true })
   }
 
   await fs.promises.writeFile(typeFile, content)
-
-  console.log(`Type definitions for project ${projectName} saved to ${typeFile}`)
-
-  return
 }
 
 /**

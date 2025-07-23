@@ -22,6 +22,8 @@ export interface YtwConfig {
   prepush?: string
   /** Post-push script to run after pushing workflows */
   postpush?: string
+  /** Folder path for TypeScript type definitions (default: "/types") */
+  typesFolder?: string
 }
 
 /**
