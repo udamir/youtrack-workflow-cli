@@ -64,9 +64,6 @@ export class ProjectInitService {
       const eslintContent = PROJECT_TEMPLATES.eslintConfig()
       await createProjectFile(projectPath, 'eslint.config.cjs', eslintContent)
 
-      const biomeData = PROJECT_TEMPLATES.biomeConfig()
-      await createProjectJsonFile(projectPath, 'biome.json', biomeData)
-
       // Create documentation files
       const gitignoreContent = PROJECT_TEMPLATES.gitignore()
       await createProjectFile(projectPath, '.gitignore', gitignoreContent)

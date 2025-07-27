@@ -145,7 +145,6 @@ export const initCommand = async (): Promise<void> => {
     console.log('   ├── README.md')
     console.log('   ├── package.json')
     console.log('   ├── eslint.config.cjs')
-    console.log('   ├── biome.json')
     
     if (useTypeScript) {
       console.log('   ├── tsconfig.json')

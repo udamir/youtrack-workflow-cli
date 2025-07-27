@@ -38,10 +38,9 @@ export const PROJECT_TEMPLATES = {
       "@jetbrains/youtrack-scripting-api": "^2022.1.46592",
     },
     devDependencies: {
-      "@biomejs/biome": "latest",
-      dotenv: "latest",
-      eslint: "latest",
-      "youtrack-workflow-cli": "latest",
+      dotenv: 'latest',
+      eslint: 'latest',
+      'youtrack-workflow-cli': 'latest',
       ...(useTypeScript && {
         typescript: "latest",
         "youtrack-workflow-api-types": "latest",
@@ -120,57 +119,7 @@ module.exports = [
   },
 ]`,
 
-  /**
-   * Generate biome.json content
-   */
-  biomeConfig: (): object => ({
-    $schema: "https://biomejs.dev/schemas/1.8.3/schema.json",
-    files: {
-      ignore: ["dist/**"],
-      ignoreUnknown: true,
-    },
-    organizeImports: {
-      enabled: true,
-    },
-    linter: {
-      enabled: true,
-      rules: {
-        recommended: true,
-        suspicious: {
-          noExplicitAny: "off",
-          noAssignInExpressions: "info",
-        },
-        complexity: {
-          noForEach: "off",
-          noBannedTypes: "off",
-        },
-        style: {
-          noParameterAssign: "info",
-          noNonNullAssertion: "info",
-        },
-        performance: {
-          noDelete: "off",
-        },
-        correctness: {
-          useExhaustiveDependencies: "info",
-        },
-      },
-    },
-    vcs: {
-      enabled: true,
-      clientKind: "git",
-      useIgnoreFile: true,
-      defaultBranch: "main",
-    },
-    formatter: {
-      enabled: true,
-      formatWithErrors: false,
-      indentStyle: "space",
-      indentWidth: 2,
-      lineEnding: "lf",
-      lineWidth: 120,
-    },
-  }),
+
 
   /**
    * Generate .gitignore content
