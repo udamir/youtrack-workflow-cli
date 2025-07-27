@@ -2,6 +2,66 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
+## [1.1.1] - 2025-01-27
+
+### Bug Fixes
+- Fixed linting issues with non-null assertions in init command
+- Minor documentation improvements
+
+## [1.1.0] - 2025-01-27
+
+### New Features
+
+#### Init Command
+- **`init`**: Initialize new YouTrack workflow projects
+  - Interactive project setup with prompts for project name, YouTrack URL, and token
+  - Command-line options for non-interactive usage:
+    - `-n, --name <name>`: Project name
+    - `--host <host>`: YouTrack base URL
+    - `--token <token>`: YouTrack token
+    - `--typescript`: Enable TypeScript support
+    - `--no-typescript`: Disable TypeScript support
+    - `-y, --yes`: Skip interactive prompts and use defaults
+  - Credential validation with retry mechanism (up to 3 attempts)
+  - Optional TypeScript configuration and scaffolding
+  - Complete project structure creation with all necessary files:
+    - `.env` with credentials
+    - `package.json` with dependencies and ytw configuration
+    - `eslint.config.cjs` for linting
+    - `tsconfig.json` (if TypeScript enabled)
+    - `.gitignore` with appropriate patterns
+    - `README.md` with project documentation
+    - `types/` directory for TypeScript definitions
+  - Support for both interactive and non-interactive workflows
+  - CI/CD and scripting support through command-line options
+
+#### Configurable Types Folder
+- **Enhanced `types` command**: Support for custom TypeScript types output folder
+  - Configurable via `ytw.typesFolder` in `package.json`
+  - Supports both relative and absolute paths
+  - Defaults to `/types` folder for backward compatibility
+  - Example configuration:
+    ```json
+    {
+      "ytw": {
+        "typesFolder": "./custom-types"
+      }
+    }
+    ```
+
+### Enhancements
+- **Project Templates**: Updated with specific dependency versions for reproducibility
+- **Documentation**: Comprehensive updates with new command examples and usage patterns
+- **Architecture**: Enhanced services layer with `ProjectInitService` for initialization logic
+- **Error Handling**: Improved validation and error messages for better user experience
+- **Backward Compatibility**: All existing functionality preserved
+
+### Technical Improvements
+- Added `InitCommandOptions` interface for type safety
+- Enhanced file system tools with project creation utilities
+- Improved input validation for project names, URLs, and tokens
+- Better separation of concerns between commands, services, and tools layers
+
 ## [1.0.0] - 2025-06-28
 
 ### Available Features

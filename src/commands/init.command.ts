@@ -164,8 +164,13 @@ export const initCommand = async (_projectName?: string, options: InitCommandOpt
   }
 
   // Step 4: Create project
+  if (!projectName) {
+    console.error("Error: Project name is required")
+    return
+  }
+
   const config: ProjectConfig = {
-    projectName: projectName!, // We know this is defined at this point
+    projectName: projectName,
     baseUrl: baseUrl || "", // Default to empty string if not provided
     token: token || "", // Default to empty string if not provided
     useTypeScript,
