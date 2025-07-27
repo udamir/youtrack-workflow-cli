@@ -164,9 +164,9 @@ export class ProjectInitService {
 
     const trimmedToken = token.trim()
 
-    // Basic format check - YouTrack tokens typically start with 'perm:'
-    if (!trimmedToken.startsWith('perm:')) {
-      return 'Token should start with "perm:" (permanent token format)'
+    // Basic format check - YouTrack tokens typically start with 'perm'
+    if (!trimmedToken.startsWith('perm')) {
+      return 'Token should start with "perm" (permanent token format)'
     }
 
     if (trimmedToken.length < 20) {

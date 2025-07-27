@@ -74,7 +74,7 @@ export const initCommand = async (): Promise<void> => {
         {
           type: 'password',
           name: 'userToken',
-          message: 'YouTrack token (starts with "perm:"):',
+          message: 'YouTrack token (starts with "perm"):',
           mask: '*',
           validate: (input: string) => {
             const validation = projectInitService.validateToken(input)
