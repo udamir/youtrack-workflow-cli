@@ -38,12 +38,12 @@ export const PROJECT_TEMPLATES = {
       "@jetbrains/youtrack-scripting-api": "^2022.1.46592",
     },
     devDependencies: {
-      dotenv: 'latest',
-      eslint: 'latest',
-      'youtrack-workflow-cli': 'latest',
+      dotenv: '^17.0.1',
+      eslint: '^9.28.0',
+      'youtrack-workflow-cli': '^1.0.4',
       ...(useTypeScript && {
-        typescript: "latest",
-        "youtrack-workflow-api-types": "latest",
+        typescript: "^5.8.3",
+        "youtrack-workflow-api-types": "^1.0.0",
       }),
     },
   }),
