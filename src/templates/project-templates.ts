@@ -25,7 +25,7 @@ export const PROJECT_TEMPLATES = {
     main: "index.js",
     scripts: {
       sync: "ytw sync",
-      ...(useTypeScript && { check: "tsc --noEmit --pretty" }),
+      ...(useTypeScript ? { check: "ytw lint --type-check" } : { check: "ytw lint" }),
     },
     repository: {
       type: "git",
@@ -33,6 +33,14 @@ export const PROJECT_TEMPLATES = {
     },
     author: "",
     license: "ISC",
+    ytw: {
+      linting: {
+        enableEslint: true,
+        enableTypeCheck: useTypeScript,
+        maxWarnings: 0
+      },
+      typesFolder: "./types"
+    },
     dependencies: {
       "@jetbrains/youtrack-scripting": "^0.2.1",
       "@jetbrains/youtrack-scripting-api": "^2022.1.46592",
@@ -43,7 +51,7 @@ export const PROJECT_TEMPLATES = {
       'youtrack-workflow-cli': '^1.0.4',
       ...(useTypeScript && {
         typescript: "^5.8.3",
-        "youtrack-workflow-api-types": "^1.0.0",
+        "youtrack-workflow-api-types": "^0.1.3",
       }),
     },
   }),
