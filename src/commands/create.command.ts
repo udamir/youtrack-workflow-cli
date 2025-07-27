@@ -3,7 +3,7 @@ import inquirer from "inquirer"
 import { createWorkflowRule, isManifestExists } from "../tools/fs.tools"
 import { isError, printNewVersionWarning, tryCatch } from "../utils"
 import { ProjectService, YoutrackService } from "../services"
-import { TEMPLATES } from "../templates"
+import { TEMPLATES } from "../templates/rule-templates"
 
 /**
  * Command to create a new workflow rule from a template

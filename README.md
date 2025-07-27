@@ -5,6 +5,7 @@ The **youtrack-workflow-cli** package contains utilities that help you manage Yo
 
 ## Features
 
+- **Project Initialization**: Initialize new workflow projects with interactive setup and scaffolding
 - **Sync Workflows**: Synchronize workflows (pull and push) between local and YouTrack
 - **Status Tracking**: Track the status of workflows with visual indicators
 - **Create new Workflow Rule**: Create a new workflow rule from a template
@@ -43,10 +44,37 @@ After installation you can use `npx` to run the commands directly:
 npx ytw <command>
 ```
 
+### Quick Project Setup
+
+For new projects, the fastest way to get started is with the `init` command:
+
+```bash
+npx ytw init
+```
+
+This will guide you through setting up a complete workflow project with all necessary files and configuration.
+
 ## Commands
 
 The package includes commands that let you synchronize local changes with your YouTrack installation. All commands are accessible through the `ytw` CLI tool. The following
 commands are available:
+
+### Init
+
+```bash
+npx ytw init
+```
+
+Initializes a new YouTrack workflow project with interactive setup. This command creates a complete project structure with all necessary configuration files.
+
+Features:
+- Interactive prompts for project name, YouTrack URL, and token
+- Credential validation with retry mechanism
+- Optional TypeScript configuration
+- Creates all necessary project files (package.json, .env, eslint config, etc.)
+- Sets up proper folder structure for workflows and types
+
+This is typically the first command you'll run when starting a new workflow project.
 
 ### List
 

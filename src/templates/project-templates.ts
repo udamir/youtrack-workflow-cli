@@ -37,7 +37,7 @@ export const PROJECT_TEMPLATES = {
       linting: {
         enableEslint: true,
         enableTypeCheck: useTypeScript,
-        maxWarnings: 0
+        maxWarnings: 5
       },
       typesFolder: "./types"
     },
@@ -194,6 +194,6 @@ This creates TypeScript definitions in the \`types\` directory that can be used 
 ## Scripts
 
 - \`npm run sync\` - Sync workflows with YouTrack
-- \`npm run check\` - Type check (TypeScript projects only)
+- \`npm run check\` - Lint and type check
 `
 };
