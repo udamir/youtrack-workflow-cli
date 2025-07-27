@@ -31,41 +31,61 @@ export const initCommand = async (): Promise<void> => {
     ])
     const projectName = name.trim()
 
-    // Step 2: Get YouTrack base URL
-    const { url } = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'url',
-        message: 'YouTrack base URL (e.g., https://youtrack.example.com):',
-        validate: (input: string) => {
-          const validation = projectInitService.validateBaseUrl(input)
-          return validation === true ? true : validation
-        }
-      }
-    ])
-    let baseUrl = url.trim()
-
-    // Step 3: Get YouTrack token
-    const { userToken } = await inquirer.prompt([
-      {
-        type: 'password',
-        name: 'userToken',
-        message: 'YouTrack token (starts with "perm:"):',
-        mask: '*',
-        validate: (input: string) => {
-          const validation = projectInitService.validateToken(input)
-          return validation === true ? true : validation
-        }
-      }
-    ])
-    let token = userToken.trim()
-
-    // Step 4: Validate credentials
+    // Step 2: Get credentials and validate
+    let baseUrl = ''
+    let token = ''
     let credentialsValid = false
     let retryCount = 0
+    let isFirstRun = true
     const maxRetries = 3
 
     while (!credentialsValid && retryCount < maxRetries) {
+      // Get YouTrack base URL
+      const { url } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'url',
+          message: 'YouTrack base URL (leave empty to skip, e.g., https://youtrack.example.com):',
+          default: isFirstRun ? '' : baseUrl,
+          validate: (input: string) => {
+            const trimmedInput = input.trim()
+            // Allow empty input to skip validation
+            if (trimmedInput === '') {
+              return true
+            }
+            const validation = projectInitService.validateBaseUrl(trimmedInput)
+            return validation === true ? true : validation
+          }
+        }
+      ])
+      
+      baseUrl = url.trim()
+      
+      // Skip validation and token input if baseUrl is empty
+      if (baseUrl === '') {
+        token = ''
+        console.log('⏭️  Skipping credential validation since base URL is empty')
+        credentialsValid = true
+        break
+      }
+      
+      // Get YouTrack token
+      const { userToken } = await inquirer.prompt([
+        {
+          type: 'password',
+          name: 'userToken',
+          message: 'YouTrack token (starts with "perm:"):',
+          mask: '*',
+          validate: (input: string) => {
+            const validation = projectInitService.validateToken(input)
+            return validation === true ? true : validation
+          }
+        }
+      ])
+      
+      token = userToken.trim()
+      
+      // Validate credentials
       const spinner = ora('Validating credentials...').start()
       
       const validationResult = await projectInitService.validateCredentials(baseUrl, token)
@@ -78,58 +98,8 @@ export const initCommand = async (): Promise<void> => {
         retryCount++
         
         if (retryCount < maxRetries) {
-          console.log(`\nRetry ${retryCount}/${maxRetries - 1}. Please check your credentials.\n`)
-          
-          // Ask for new credentials
-          const { retryChoice } = await inquirer.prompt([
-            {
-              type: 'list',
-              name: 'retryChoice',
-              message: 'What would you like to do?',
-              choices: [
-                { name: 'Re-enter base URL and token', value: 'both' },
-                { name: 'Re-enter token only', value: 'token' },
-                { name: 'Cancel initialization', value: 'cancel' }
-              ]
-            }
-          ])
-
-          if (retryChoice === 'cancel') {
-            console.log('Initialization cancelled.')
-            return
-          }
-
-          if (retryChoice === 'both') {
-            // Re-enter base URL
-            const { newUrl } = await inquirer.prompt([
-              {
-                type: 'input',
-                name: 'newUrl',
-                message: 'YouTrack base URL:',
-                default: baseUrl,
-                validate: (input: string) => {
-                  const validation = projectInitService.validateBaseUrl(input)
-                  return validation === true ? true : validation
-                }
-              }
-            ])
-            baseUrl = newUrl.trim()
-          }
-
-          // Re-enter token
-          const { newToken } = await inquirer.prompt([
-            {
-              type: 'password',
-              name: 'newToken',
-              message: 'YouTrack token:',
-              mask: '*',
-              validate: (input: string) => {
-                const validation = projectInitService.validateToken(input)
-                return validation === true ? true : validation
-              }
-            }
-          ])
-          token = newToken.trim()
+          console.log(`\nRetry ${retryCount}/${maxRetries}. Please check your credentials.\n`)
+          isFirstRun = false // Set to false for subsequent runs
         } else {
           console.log('\nMaximum retry attempts reached. Please check your credentials and try again.')
           return
@@ -137,7 +107,7 @@ export const initCommand = async (): Promise<void> => {
       }
     }
 
-    // Step 5: Ask about TypeScript support
+    // Step 3: Ask about TypeScript support
     const { useTypeScript } = await inquirer.prompt([
       {
         type: 'confirm',
@@ -147,7 +117,7 @@ export const initCommand = async (): Promise<void> => {
       }
     ])
 
-    // Step 6: Create project
+    // Step 4: Create project
     const config: ProjectConfig = {
       projectName,
       baseUrl,
@@ -167,7 +137,7 @@ export const initCommand = async (): Promise<void> => {
 
     spinner.succeed('Project created successfully!')
 
-    // Step 7: Display success message and next steps
+    // Step 5: Display success message and next steps
     console.log(`\n✅ Project "${projectName}" has been initialized!\n`)
     console.log('📁 Created files:')
     console.log('   ├── .env (with your credentials)')
