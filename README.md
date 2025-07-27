@@ -37,12 +37,15 @@ Create a new workflow project using the interactive setup:
 npx youtrack-workflow-cli init
 # or with Bun
 bunx youtrack-workflow-cli init
+
+# Or use options for non-interactive setup
+npx youtrack-workflow-cli init --name my-project --typescript
 ```
 
 This command will:
-- Prompt you for project name, YouTrack URL, and authentication token
+- Prompt you for project name, YouTrack URL, and authentication token (or use provided options)
 - Validate your YouTrack credentials
-- Ask if you want TypeScript support
+- Ask if you want TypeScript support (or use --typescript/--no-typescript flags)
 - Create a complete project structure with all necessary files
 
 ### 2. Navigate to Your Project
@@ -94,13 +97,37 @@ commands are available:
 ### Init
 
 ```bash
-npx ytw init
+npx ytw init [project-name] [options]
 ```
 
 Initializes a new YouTrack workflow project with interactive setup. This command creates a complete project structure with all necessary configuration files.
 
-Features:
+**Options:**
+- `--host <host>` - YouTrack base URL
+- `--token <token>` - YouTrack token
+- `--typescript` - Enable TypeScript support
+- `--no-typescript` - Disable TypeScript support
+- `-y, --yes` - Skip interactive prompts and use defaults
+
+**Examples:**
+
+```bash
+# Interactive mode (default)
+npx ytw init
+
+# Non-interactive with all options
+npx ytw init my-project --host https://youtrack.example.com --token perm:abc123 --typescript
+
+# Partial options (will prompt for missing values)
+npx ytw init --name my-project --typescript
+
+# Quick setup with defaults
+npx ytw init --name my-project --yes
+```
+
+**Features:**
 - Interactive prompts for project name, YouTrack URL, and token
+- Command-line options for non-interactive usage
 - Credential validation with retry mechanism
 - Optional TypeScript configuration
 - Creates all necessary project files (package.json, .env, eslint config, etc.)

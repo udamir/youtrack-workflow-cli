@@ -154,6 +154,12 @@ program
 program
   .command("init")
   .description("Initialize a new YouTrack workflow project")
-  .action(() => initCommand())
+  .option("-n, --name <name>", "Project name")
+  .option("--host <host>", "YouTrack base URL")
+  .option("--token <token>", "YouTrack token")
+  .option("--typescript", "Enable TypeScript support")
+  .option("--no-typescript", "Disable TypeScript support")
+  .option("-y, --yes", "Skip interactive prompts and use defaults")
+  .action((options) => initCommand(options))
 
 program.parse(process.argv)
