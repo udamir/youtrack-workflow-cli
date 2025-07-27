@@ -25,7 +25,9 @@ Get started with YouTrack workflow development in just a few steps:
 
 ### Prerequisites
 
-Ensure you have [Node.js](https://nodejs.org/en/) installed on your system.
+Ensure you have one of the following JavaScript runtimes installed:
+- [Node.js](https://nodejs.org/en/) (recommended)
+- [Bun](https://bun.sh/) (fast alternative)
 
 ### 1. Initialize a New Project
 
@@ -33,6 +35,8 @@ Create a new workflow project using the interactive setup:
 
 ```bash
 npx youtrack-workflow-cli init
+# or with Bun
+bunx youtrack-workflow-cli init
 ```
 
 This command will:
@@ -51,6 +55,8 @@ cd your-project-name
 
 ```bash
 npm install
+# or with Bun
+bun install
 ```
 
 ### 4. Verify Setup
@@ -74,6 +80,9 @@ If you prefer to install the CLI globally:
 
 ```bash
 npm install -g youtrack-workflow-cli
+# or with Bun
+bun install -g youtrack-workflow-cli
+
 ytw init  # Use 'ytw' instead of 'npx youtrack-workflow-cli'
 ```
 
