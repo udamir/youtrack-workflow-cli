@@ -97,3 +97,31 @@ export interface RuleLog {
   /** Username who triggered the log */
   username?: string
 }
+
+/**
+ * Configuration for project initialization
+ */
+export interface InitConfig {
+  /** Name of the project */
+  projectName: string
+  /** YouTrack base URL */
+  baseUrl: string
+  /** YouTrack token */
+  token: string
+  /** Whether to configure TypeScript support */
+  useTypeScript: boolean
+}
+
+/**
+ * Project template structure
+ */
+export interface ProjectTemplate {
+  /** .env file template */
+  env: string
+  /** ESLint configuration template */
+  eslint: string
+  /** TypeScript configuration template (optional) */
+  tsconfig?: string
+  /** package.json template */
+  packageJson: string
+}

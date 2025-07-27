@@ -13,6 +13,7 @@ import {
   pushCommand,
   addCommand,
   createCommand,
+  initCommand,
 } from "./commands"
 import { SYNC_TYPE } from "./consts"
 const pkg = require("../package.json")
@@ -149,5 +150,10 @@ program
   .action((workflow, ruleName, template, { host = YOUTRACK_BASE_URL, token = YOUTRACK_TOKEN }) =>
     createCommand(workflow, ruleName, template, { host, token }),
   )
+
+program
+  .command("init")
+  .description("Initialize a new YouTrack workflow project")
+  .action(() => initCommand())
 
 program.parse(process.argv)

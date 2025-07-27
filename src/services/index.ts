@@ -1,6 +1,7 @@
 export * from "./typescript.service"
 export * from "./linting.service"
 export * from "./project.service"
+export * from "./project-init.service"
 export * from "./watch.service"
 export * from "./logs.service"
 export * from "./youtrack"
