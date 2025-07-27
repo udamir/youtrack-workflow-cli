@@ -148,15 +148,19 @@ export const initCommand = async (): Promise<void> => {
     
     if (useTypeScript) {
       console.log('   ├── tsconfig.json')
-      console.log('   └── types/')
-      console.log('       └── customTypes.d.ts')
+      console.log('   └── types/ (empty - use `npx ytw types` to generate definitions)')
     }
 
     console.log('\n🚀 Next steps:')
     console.log(`   1. cd ${projectName}`)
     console.log('   2. npm install')
     console.log('   3. npx ytw list (verify connection)')
-    console.log('   4. npx ytw add (add your first workflow)')
+    if (useTypeScript) {
+      console.log('   4. npx ytw types (generate type definitions)')
+      console.log('   5. npx ytw add (add your first workflow)')
+    } else {
+      console.log('   4. npx ytw add (add your first workflow)')
+    }
     console.log('\n📖 See README.md for detailed usage instructions.')
 
   } catch (error) {

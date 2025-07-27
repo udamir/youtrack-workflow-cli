@@ -312,24 +312,10 @@ export const createProjectJsonFile = async (projectPath: string, fileName: strin
 };
 
 /**
- * Create types directory with basic type definitions
+ * Create types directory for TypeScript type definitions
  * @param projectPath Path to the project directory
  */
 export const createTypesDirectory = async (projectPath: string): Promise<void> => {
   const typesPath = path.join(projectPath, "types");
   await fs.promises.mkdir(typesPath, { recursive: true });
-
-  // Create basic type definition file
-  const customTypesContent = `// Custom type definitions for YouTrack workflows
-// Add your custom types here
-
-export interface CustomIssue extends Issue {
-  // Add custom properties
-}
-
-export interface CustomProject extends Project {
-  // Add custom properties
-}
-`;
-  await createProjectFile(typesPath, "customTypes.d.ts", customTypesContent);
 };

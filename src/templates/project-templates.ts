@@ -44,23 +44,8 @@ export const PROJECT_TEMPLATES = {
       ...(useTypeScript && {
         typescript: "latest",
         "youtrack-workflow-api-types": "latest",
-        "@types/jest": "latest",
-        jest: "latest",
-        "ts-jest": "latest",
       }),
     },
-    ...(useTypeScript && {
-      jest: {
-        preset: "ts-jest",
-        testEnvironment: "node",
-        moduleFileExtensions: ["ts", "js"],
-        transform: {
-          "^.+\\.ts$": ["ts-jest"],
-        },
-        testMatch: ["**/test/**/*.test.ts"],
-        testPathIgnorePatterns: ["/node_modules/", "/dist/"],
-      },
-    }),
   }),
 
   /**
@@ -186,30 +171,21 @@ YouTrack workflows for ${projectName}
 
 ## TypeScript Support
 
-Custom types can be defined in the \`types\` directory and used via JSDoc annotations:
+Generate YouTrack type definitions for your project:
+
+\`\`\`bash
+npx ytw types
+\`\`\`
+
+This creates TypeScript definitions in the \`types\` directory that can be used via JSDoc annotations:
 
 \`\`\`js
-/** @import { Issue } from '../types/customTypes' */
+/** @import { Issue, Project } from '../types/youtrack' */
 \`\`\`
 
 ## Scripts
 
 - \`npm run sync\` - Sync workflows with YouTrack
 - \`npm run check\` - Type check (TypeScript projects only)
-`,
-
-  /**
-   * Generate custom types file content
-   */
-  customTypes: (): string => `// Custom type definitions for YouTrack workflows
-// Add your custom types here
-
-export interface CustomIssue extends Issue {
-  // Add custom properties
-}
-
-export interface CustomProject extends Project {
-  // Add custom properties
-}
-`,
+`
 };
