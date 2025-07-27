@@ -21,38 +21,61 @@ The **youtrack-workflow-cli** package contains utilities that help you manage Yo
 
 ## Quick Start
 
-To work with the package, you need to install and run [Node.js](https://nodejs.org/en/). This also installs
-the npm package manager that lets you work with the package in your projects.
-Next, install the **youtrack-workflow-cli** package in your development environment. The easiest way to get
-started is to install the package globally with the following command:
+Get started with YouTrack workflow development in just a few steps:
+
+### Prerequisites
+
+Ensure you have [Node.js](https://nodejs.org/en/) installed on your system.
+
+### 1. Initialize a New Project
+
+Create a new workflow project using the interactive setup:
+
+```bash
+npx youtrack-workflow-cli init
+```
+
+This command will:
+- Prompt you for project name, YouTrack URL, and authentication token
+- Validate your YouTrack credentials
+- Ask if you want TypeScript support
+- Create a complete project structure with all necessary files
+
+### 2. Navigate to Your Project
+
+```bash
+cd your-project-name
+```
+
+### 3. Install Dependencies
+
+```bash
+npm install
+```
+
+### 4. Verify Setup
+
+```bash
+npx ytw list
+```
+
+This should display the workflows available in your YouTrack instance.
+
+### 5. Start Developing
+
+```bash
+npx ytw add    # Add workflows to your project
+npx ytw types  # Generate TypeScript definitions (if using TypeScript)
+```
+
+### Alternative Installation
+
+If you prefer to install the CLI globally:
 
 ```bash
 npm install -g youtrack-workflow-cli
+ytw init  # Use 'ytw' instead of 'npx youtrack-workflow-cli'
 ```
-
-If you prefer to install packages as dependencies in your development environment, enter:
-
-```bash
-npm install --save-dev youtrack-workflow-cli
-```
-
-### Using npx
-
-After installation you can use `npx` to run the commands directly:
-
-```bash
-npx ytw <command>
-```
-
-### Quick Project Setup
-
-For new projects, the fastest way to get started is with the `init` command:
-
-```bash
-npx ytw init
-```
-
-This will guide you through setting up a complete workflow project with all necessary files and configuration.
 
 ## Commands
 
