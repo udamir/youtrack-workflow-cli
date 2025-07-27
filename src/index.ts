@@ -17,7 +17,10 @@ import {
 import { SYNC_TYPE } from "./consts"
 const pkg = require("../package.json")
 
-dotenv.config()
+dotenv.config({
+  quiet: true,
+  debug: false
+})
 
 const program = new Command()
 
