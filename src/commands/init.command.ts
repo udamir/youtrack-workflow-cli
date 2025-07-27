@@ -18,62 +18,47 @@ export const initCommand = async (): Promise<void> => {
 
   try {
     // Step 1: Get project name
-    let projectName: string
-    while (true) {
-      const { name } = await inquirer.prompt([
-        {
-          type: 'input',
-          name: 'name',
-          message: 'Project name:',
-          validate: (input: string) => {
-            const validation = projectInitService.validateProjectName(input)
-            return validation === true ? true : validation
-          }
+    const { name } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'name',
+        message: 'Project name:',
+        validate: (input: string) => {
+          const validation = projectInitService.validateProjectName(input)
+          return validation === true ? true : validation
         }
-      ])
-      
-      projectName = name.trim()
-      break
-    }
+      }
+    ])
+    const projectName = name.trim()
 
     // Step 2: Get YouTrack base URL
-    let baseUrl: string
-    while (true) {
-      const { url } = await inquirer.prompt([
-        {
-          type: 'input',
-          name: 'url',
-          message: 'YouTrack base URL (e.g., https://youtrack.example.com):',
-          validate: (input: string) => {
-            const validation = projectInitService.validateBaseUrl(input)
-            return validation === true ? true : validation
-          }
+    const { url } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'url',
+        message: 'YouTrack base URL (e.g., https://youtrack.example.com):',
+        validate: (input: string) => {
+          const validation = projectInitService.validateBaseUrl(input)
+          return validation === true ? true : validation
         }
-      ])
-      
-      baseUrl = url.trim()
-      break
-    }
+      }
+    ])
+    let baseUrl = url.trim()
 
     // Step 3: Get YouTrack token
-    let token: string
-    while (true) {
-      const { userToken } = await inquirer.prompt([
-        {
-          type: 'password',
-          name: 'userToken',
-          message: 'YouTrack token (starts with "perm:"):',
-          mask: '*',
-          validate: (input: string) => {
-            const validation = projectInitService.validateToken(input)
-            return validation === true ? true : validation
-          }
+    const { userToken } = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'userToken',
+        message: 'YouTrack token (starts with "perm:"):',
+        mask: '*',
+        validate: (input: string) => {
+          const validation = projectInitService.validateToken(input)
+          return validation === true ? true : validation
         }
-      ])
-      
-      token = userToken.trim()
-      break
-    }
+      }
+    ])
+    let token = userToken.trim()
 
     // Step 4: Validate credentials
     let credentialsValid = false
