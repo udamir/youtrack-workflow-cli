@@ -20,7 +20,7 @@ const pkg = require("../package.json")
 
 dotenv.config({
   quiet: true,
-  debug: false
+  debug: false,
 })
 
 const program = new Command()

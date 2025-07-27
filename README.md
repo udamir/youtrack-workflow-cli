@@ -5,7 +5,7 @@ The **youtrack-workflow-cli** package contains utilities that help you manage Yo
 
 ## Features
 
-- **Project Initialization**: Initialize new workflow projects with interactive setup and scaffolding
+- **Project Initialization**: Initialize new workflow projects with interactive setup
 - **Sync Workflows**: Synchronize workflows (pull and push) between local and YouTrack
 - **Status Tracking**: Track the status of workflows with visual indicators
 - **Create new Workflow Rule**: Create a new workflow rule from a template

@@ -3,10 +3,10 @@
  */
 
 export interface ProjectConfig {
-  projectName: string;
-  baseUrl: string;
-  token: string;
-  useTypeScript: boolean;
+  projectName: string
+  baseUrl: string
+  token: string
+  useTypeScript: boolean
 }
 
 export const PROJECT_TEMPLATES = {
@@ -37,18 +37,18 @@ export const PROJECT_TEMPLATES = {
       linting: {
         enableEslint: true,
         enableTypeCheck: useTypeScript,
-        maxWarnings: 5
+        maxWarnings: 5,
       },
-      typesFolder: "./types"
+      typesFolder: "./types",
     },
     dependencies: {
       "@jetbrains/youtrack-scripting": "^0.2.1",
       "@jetbrains/youtrack-scripting-api": "^2022.1.46592",
     },
     devDependencies: {
-      dotenv: '^17.0.1',
-      eslint: '^9.28.0',
-      'youtrack-workflow-cli': '^1.0.4',
+      dotenv: "^17.0.1",
+      eslint: "^9.28.0",
+      "youtrack-workflow-cli": "^1.0.4",
       ...(useTypeScript && {
         typescript: "^5.8.3",
         "youtrack-workflow-api-types": "^0.1.3",
@@ -111,8 +111,6 @@ module.exports = [
     },
   },
 ]`,
-
-
 
   /**
    * Generate .gitignore content
@@ -195,5 +193,5 @@ This creates TypeScript definitions in the \`types\` directory that can be used 
 
 - \`npm run sync\` - Sync workflows with YouTrack
 - \`npm run check\` - Lint and type check
-`
-};
+`,
+}
