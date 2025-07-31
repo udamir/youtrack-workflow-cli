@@ -32,6 +32,7 @@ jobs:
         run: bun run check
       
       - name: Run tests
+        if: ${{ github.actor == 'dependabot[bot]' || secrets.YOUTRACK_TOKEN != '' }}
         env:
           YOUTRACK_BASE_URL: ${{ secrets.YOUTRACK_BASE_URL }}
           YOUTRACK_TOKEN: ${{ secrets.YOUTRACK_TOKEN }}
