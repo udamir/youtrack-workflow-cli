@@ -6,7 +6,7 @@ name: Bun Tests
 on:
   push:
     branches: [ master ]
-  pull_request:
+  pull_request_target:
     branches: [ master ]
 
 jobs:
@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
 
@@ -32,7 +35,7 @@ jobs:
         run: bun run check
       
       - name: Run tests
-        if: ${{ github.actor == 'dependabot[bot]' || secrets.YOUTRACK_TOKEN != '' }}
+        if: ${{ github.actor == 'dependabot[bot]' }}
         env:
           YOUTRACK_BASE_URL: ${{ secrets.YOUTRACK_BASE_URL }}
           YOUTRACK_TOKEN: ${{ secrets.YOUTRACK_TOKEN }}
