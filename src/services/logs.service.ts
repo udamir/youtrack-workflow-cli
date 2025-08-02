@@ -104,19 +104,25 @@ export class LogService {
     this.stopWatchingLogs()
 
     for (const { workflowId, ruleId, workflowName, ruleName } of workflowRule) {
-      // Set up interval for this workflow
+      // Create unique key for this workflow rule combination
+      const watchKey = `${workflowName}:${ruleName}`
+
+      // Set up interval for this workflow rule
       const intervalId = setInterval(async () => {
         const [logs, error] = await tryCatch(this.fetchWorkflowRuleLogs({ workflowId, ruleId, workflowName, ruleName }))
         if (error) {
           onError(workflowName, ruleName, error.message)
-          clearInterval(this._watchIntervals.get(workflowName) as NodeJS.Timeout)
-          this._watchIntervals.delete(workflowName)
+          clearInterval(this._watchIntervals.get(watchKey) as NodeJS.Timeout)
+          this._watchIntervals.delete(watchKey)
         } else {
-          onNewLogs(workflowName, ruleName, logs)
+          // Only call onNewLogs if there are actually new logs to prevent empty outputs
+          if (logs.length > 0) {
+            onNewLogs(workflowName, ruleName, logs)
+          }
         }
       }, interval)
 
-      this._watchIntervals.set(workflowName, intervalId)
+      this._watchIntervals.set(watchKey, intervalId)
     }
   }
 

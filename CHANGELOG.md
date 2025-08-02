@@ -2,7 +2,7 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
-## [1.2.0] - 2025-08-03
+## [1.2.1] - 2025-08-03
 
 ### New Features
 
@@ -12,6 +12,11 @@ A command-line tool for managing YouTrack workflows with seamless local developm
   - `exclude` array: Specify which workflows to exclude from linting (these workflows will never be linted)
   - Configuration via `package.json` under `ytw.linting.include` and `ytw.linting.exclude`
   - Effects `lint` and `sync` commands
+
+### Bug Fixes
+
+#### Logs Command Watch Mode Duplicates
+- **Fixed duplicated logs in watch mode**: Resolved issue where `ytw logs --watch` showed duplicate log entries
 
 ## [1.1.1] - 2025-01-27
 
