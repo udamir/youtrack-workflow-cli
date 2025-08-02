@@ -4,7 +4,10 @@ import * as os from "node:os"
 import dotenv from "dotenv"
 
 // Load environment variables from .env file
-dotenv.config()
+dotenv.config({
+  quiet: true,
+  debug: false,
+})
 
 /**
  * Helper for YouTrack integration tests

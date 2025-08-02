@@ -148,16 +148,22 @@ export const syncCommand = async (
         }
       },
       preUploadCheck: async (workflow) => {
-        const { errors, warnings } = await lintingService.lintWorkflow(workflow)
-        spinner.stop()
-        if (errors.length) {
-          printLintSummary(workflow, errors, warnings)
-          statuses.inc(SYNC_STATUS.FAILED)
-          return false
-        }
+        // Check if this workflow should be linted based on include/exclude configuration
+        if (lintingService.shouldLintWorkflow(workflow)) {
+          const { errors, warnings } = await lintingService.lintWorkflow(workflow)
+          spinner.stop()
+          if (errors.length) {
+            printLintSummary(workflow, errors, warnings)
+            statuses.inc(SYNC_STATUS.FAILED)
+            return false
+          }
 
-        printLintSummary(`${workflow}: Lint results`, errors, warnings)
-        printLintResult(errors, warnings)
+          printLintSummary(`${workflow}: Lint results`, errors, warnings)
+          printLintResult(errors, warnings)
+        } else {
+          spinner.stop()
+          printItemStatus(workflow, PROGRESS_STATUS.WARNING, "Skipped (excluded by configuration)")
+        }
 
         // Execute pre-push script if pre-push script exists
         if (ytw?.prepush) {
@@ -181,7 +187,9 @@ export const syncCommand = async (
     const watchService = new WatchService(projectService, {
       // Display file change events
       onFileChange: async (workflowName, filename, eventType) => {
-        const checkNeeded = lintingService.config.enableEslint || lintingService.config.enableTypeCheck
+        const checkNeeded =
+          (lintingService.config.enableEslint || lintingService.config.enableTypeCheck) &&
+          lintingService.shouldLintWorkflow(workflowName)
         printItemStatus(
           `${workflowName}/${filename}`,
           PROGRESS_STATUS.INFO,

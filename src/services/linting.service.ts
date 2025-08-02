@@ -8,12 +8,14 @@ type LintingServiceConfig = {
   enableEslint?: boolean
   enableTypeCheck?: boolean
   maxWarnings?: number
+  include?: string[]
+  exclude?: string[]
 }
 
 export class LintingService {
   public readonly config: LintingConfig
 
-  constructor({ enableEslint, enableTypeCheck, maxWarnings }: LintingServiceConfig = {}) {
+  constructor({ enableEslint, enableTypeCheck, maxWarnings, include, exclude }: LintingServiceConfig = {}) {
     const { linting } = readPackageJson().ytw
 
     const esLintConfig = fileExists("eslint.config.js")
@@ -22,7 +24,29 @@ export class LintingService {
       enableEslint: linting?.enableEslint ?? enableEslint ?? esLintConfig ?? false,
       enableTypeCheck: linting?.enableTypeCheck ?? enableTypeCheck ?? false,
       maxWarnings: linting?.maxWarnings ?? maxWarnings ?? 10,
+      include: linting?.include ?? include,
+      exclude: linting?.exclude ?? exclude,
     }
+  }
+
+  /**
+   * Check if a workflow should be linted based on include/exclude configuration
+   * @param workflowName Workflow name to check
+   * @returns True if the workflow should be linted, false otherwise
+   */
+  public shouldLintWorkflow(workflowName: string): boolean {
+    // If exclude list is specified and workflow is in it, don't lint
+    if (this.config.exclude?.includes(workflowName)) {
+      return false
+    }
+
+    // If include list is specified, only lint workflows in the list
+    if (this.config.include && this.config.include.length > 0) {
+      return this.config.include.includes(workflowName)
+    }
+
+    // If no include list is specified and workflow is not excluded, lint it
+    return true
   }
 
   public async lintWorkflow(workflowName: string): Promise<LintingResult> {

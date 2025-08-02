@@ -10,6 +10,10 @@ export interface LintingConfig {
   enableTypeCheck: boolean
   /** Maximum number of warnings allowed before failing */
   maxWarnings: number
+  /** Array of workflow names to include in linting (if specified, only these workflows will be linted) */
+  include?: string[]
+  /** Array of workflow names to exclude from linting (these workflows will never be linted) */
+  exclude?: string[]
 }
 
 /**

@@ -221,6 +221,8 @@ Options:
 - `-m, --max-warnings [number]` - maximum allowed warnings
 - If no workflow names are provided, it will check status and prompt you to select workflows interactively from those which are not synced.
 
+**Note:** When linting is enabled (`--lint` or `--type-check`), the sync command respects the `include` and `exclude` configuration in your `package.json`. Workflows excluded from linting will be synced but won't be linted during the process.
+
 ### Lint
 
 ```bash
@@ -232,6 +234,8 @@ Runs linting checks on workflow files. This helps maintain code quality and catc
 Options:
 - `-t, --type-check` - run TypeScript type checking
 - If no workflow names are provided, it will lint all workflows in your project.
+
+**Note:** The lint command respects the `include` and `exclude` configuration in your `package.json`. Workflows can be filtered based on these settings - see the [Configuration](#configuration-in-packagejson) section for details.
 
 
 Eslint config (`eslint.config.js`) example:
@@ -379,7 +383,9 @@ You can configure your workflow management in your project's `package.json` file
       "enableEslint": true,
       "enableTypeCheck": false,
       "failOnWarnings": false,
-      "maxWarnings": 10
+      "maxWarnings": 10,
+      "include": ["workflow1", "workflow2"],
+      "exclude": ["legacy-workflow", "experimental-workflow"]
     },
     "prepush": "your-script-command",
     "postpush": "your-script-command",
@@ -396,6 +402,8 @@ You can configure your workflow management in your project's `package.json` file
 - `enableTypeCheck` (boolean): Enable or disable TypeScript type checking during linting and sync commands.
 - `failOnWarnings` (boolean): Whether lint warnings should cause the command to fail.
 - `maxWarnings` (number): Maximum number of warnings allowed before the linting fails.
+- `include` (string[]): Array of workflow names to include in linting. If specified, only these workflows will be linted.
+- `exclude` (string[]): Array of workflow names to exclude from linting. These workflows will never be linted, even if they're in the include list.
 
 #### Script hooks:
 

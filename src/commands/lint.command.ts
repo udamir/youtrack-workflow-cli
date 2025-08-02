@@ -16,7 +16,13 @@ export const lintCommand = async (workflow: string[], { typeCheck }: { typeCheck
     enableTypeCheck: typeCheck,
   })
 
-  const workflowToProcess: string[] = workflow.length > 0 ? workflow : Object.keys(readLockFile()?.workflows ?? {})
+  const allWorkflows: string[] = workflow.length > 0 ? workflow : Object.keys(readLockFile()?.workflows ?? {})
+
+  // Filter workflows based on include/exclude configuration
+  const workflowToProcess = allWorkflows.filter((workflowPath) => {
+    const workflowName = workflowPath.split("/").pop() || workflowPath
+    return lintingService.shouldLintWorkflow(workflowName)
+  })
 
   // Get workflows to lint
   if (workflowToProcess.length === 0) {
