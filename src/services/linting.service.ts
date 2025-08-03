@@ -131,10 +131,24 @@ export class LintingService {
 
   private async runTypeCheck(workflowName: string): Promise<LintingResult> {
     try {
-      // Run TypeScript using npx to ensure we use the local installation
-      execSync(`npx --no-install tsc --noEmit --allowJs --checkJs --pretty false ${workflowName}/*.js`, {
+      // Check if local tsconfig.json exists
+      const hasTsConfig = fileExists("tsconfig.json")
+
+      let tscCommand: string
+
+      if (hasTsConfig) {
+        // Use local tsconfig.json if it exists
+        tscCommand = `npx --no-install tsc --noEmit --pretty false ${workflowName}/*.js`
+      } else {
+        // Fallback to explicit compiler options if no tsconfig.json
+        tscCommand = `npx --no-install tsc --noEmit --allowJs --checkJs --target es2021 --lib es2021 --moduleResolution node --pretty false ${workflowName}/*.js`
+      }
+
+      // Run TypeScript compiler
+      execSync(tscCommand, {
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],
+        cwd: process.cwd(), // Ensure we run from the project root
       })
 
       return { errors: [], warnings: [] } // No output means no errors

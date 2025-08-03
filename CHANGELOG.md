@@ -2,7 +2,7 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
-## [1.2.1] - 2025-08-03
+## [1.2.2] - 2025-08-03
 
 ### New Features
 
@@ -17,6 +17,7 @@ A command-line tool for managing YouTrack workflows with seamless local developm
 
 #### Logs Command Watch Mode Duplicates
 - **Fixed duplicated logs in watch mode**: Resolved issue where `ytw logs --watch` showed duplicate log entries
+- **Fixed TypeScript linting**: Resolved issue where `ytw lint` ignores `tsconfig.json` settings
 
 ## [1.1.1] - 2025-01-27
 
