@@ -51,7 +51,7 @@ export const PROJECT_TEMPLATES = {
       "youtrack-workflow-cli": "^1.0.4",
       ...(useTypeScript && {
         typescript: "^5.8.3",
-        "youtrack-workflow-api-types": "^0.1.3",
+        "youtrack-workflow-api-types": "^0.2.1",
       }),
     },
   }),

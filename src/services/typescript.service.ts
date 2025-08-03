@@ -1,5 +1,5 @@
 import { errorStatus, normalize, skippedStatus, successStatus } from "../utils"
-import type { YoutrackService } from "./youtrack"
+import type { IssueLinkType, YoutrackService } from "./youtrack"
 import { writeTypeFile } from "../tools/fs.tools"
 import type { ActionResult } from "../types"
 
@@ -47,6 +47,9 @@ export class TypeScriptService {
       // Get work item types directly from the API
       const workItemTypes = await this.youtrack.getProjectWorkflowItems(project.id)
 
+      // Get issue link types
+      const issueLinkTypes = await this.youtrack.getIssueLinkTypes()
+
       // Parse fields data
       const fieldsData: FieldData[] = []
       const bundleTypes: Record<string, string[]> = {}
@@ -72,7 +75,7 @@ export class TypeScriptService {
       }
 
       // Generate the type definition content
-      const typeDefs = this.generateTypeDefinitionContent(fieldsData, workItemTypes, bundleTypes)
+      const typeDefs = this.generateTypeDefinitionContent(fieldsData, workItemTypes, bundleTypes, issueLinkTypes)
 
       // Write the type definition file
       await writeTypeFile(project.shortName, typeDefs)
@@ -152,6 +155,7 @@ export class TypeScriptService {
     fields: FieldData[],
     workItemTypes: string[],
     bundleTypes: Record<string, string[]>,
+    issueLinkTypes: IssueLinkType[],
   ): string {
     // Generate imports section
     const imports = ["entities", "date-time"]
@@ -174,11 +178,17 @@ export class TypeScriptService {
     // Generate Fields interface
     const fieldsInterface = this.printFieldsInterface(fields)
 
+    const linkTypes = []
+    for (const linkType of issueLinkTypes) {
+      linkTypes.push(linkType.sourceToTarget, ...(linkType.targetToSource ? [linkType.targetToSource] : []))
+    }
+    const issueLinkTypesStr = `\ntype IssueLinkTypeValue =${linkTypes.length > 0 ? linkTypes.map((v) => `\n  | "${v}"`).join("\n") : " string"}`
+
     // Generate the Issue and IssueWorkItem types
     const issueTypes =
-      "\ntype Issue = entities.Issue<Fields, WorkItemTypeValue>;\ntype IssueWorkItem = entities.IssueWorkItem<WorkItemTypeValue>"
+      "\ntype Issue = entities.Issue<Fields, WorkItemTypeValue, IssueLinkTypeValue>;\ntype IssueWorkItem = entities.IssueWorkItem<WorkItemTypeValue>"
 
     // Compile the full type definition content
-    return `${imports}\n${bundleTypesStr}\n${workItemType}\n\n${fieldsInterface}\n${issueTypes}\n`
+    return `${imports}\n${bundleTypesStr}\n${workItemType}\n${issueLinkTypesStr}\n\n${fieldsInterface}\n${issueTypes}\n`
   }
 }

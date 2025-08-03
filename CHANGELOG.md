@@ -2,6 +2,15 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
+## [1.3.0] - 2025-08-04
+
+### New Features
+
+#### Issue Link Types Support
+- **Enhanced Type Generation**: Added support for issue link types in TypeScript type generation
+- **Type Safety**: Issue links now properly typed with project-specific link type names
+
+
 ## [1.2.4] - 2025-08-03
 
 ### New Features
@@ -14,8 +23,6 @@ A command-line tool for managing YouTrack workflows with seamless local developm
   - Effects `lint` and `sync` commands
 
 ### Bug Fixes
-
-#### Logs Command Watch Mode Duplicates
 - **Fixed duplicated logs in watch mode**: Resolved issue where `ytw logs --watch` showed duplicate log entries
 - **Fixed TypeScript linting**: Resolved issue where `ytw lint` ignores `tsconfig.json` settings
 - **Fixed Default tsconfig**: Fixed default tsconfig generated on `ytw init`

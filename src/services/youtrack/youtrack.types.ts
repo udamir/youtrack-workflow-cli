@@ -64,3 +64,13 @@ export type CustomFieldInfo = {
   isMultiValue: boolean
   values?: string[]
 }
+
+export type IssueLinkType = {
+  id: string
+  name: string
+  aggregation: string
+  directed: boolean
+  readOnly: boolean
+  sourceToTarget: string
+  targetToSource?: string
+}

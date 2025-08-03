@@ -10,6 +10,7 @@ import type {
   WorkflowItemEntity,
   RuleLog,
   CustomFieldInfo,
+  IssueLinkType,
 } from "./youtrack.types"
 
 /**
@@ -81,7 +82,7 @@ export class YoutrackService {
   /**
    * Fetch a workflow from YouTrack
    * @param workflow Workflow name
-   * @returns Workflow data as an array of WorkflowFile
+   * @returns {Promise<WorkflowFile[] | null>} Workflow data as an array of WorkflowFile
    * @throws {YouTrackApiError} If the workflow cannot be fetched
    */
   public async fetchWorkflow(workflow: string): Promise<WorkflowFile[] | null> {
@@ -121,7 +122,7 @@ export class YoutrackService {
 
   /**
    * Get all projects from YouTrack
-   * @returns Array of project entities
+   * @returns {Promise<ProjectEntity[]>} Array of project entities
    * @throws {YouTrackApiError} If the projects cannot be fetched
    */
   public async fetchProjects(): Promise<ProjectEntity[]> {
@@ -135,7 +136,8 @@ export class YoutrackService {
   /**
    * Get custom fields for a project
    * @param projectId Project ID
-   * @returns Array of custom field information
+   * @returns {Promise<CustomFieldInfo[]>} Array of custom field information
+   * @throws {YouTrackApiError} If the custom fields cannot be fetched
    */
   public async getProjectCustomFields(projectId: string): Promise<CustomFieldInfo[]> {
     const [fields, error] = await tryCatch(
@@ -171,7 +173,7 @@ export class YoutrackService {
    * Get custom field bundle
    * @param type Custom field type
    * @param bundleId Bundle ID
-   * @returns Array of custom field bundle entities
+   * @returns {Promise<CustomFieldBundleEntity[]>} Array of custom field bundle entities
    * @throws {YouTrackApiError} If the custom field bundle cannot be fetched
    */
   public async getCustomFieldBundle(type: string, bundleId: string): Promise<CustomFieldBundleEntity[]> {
@@ -189,7 +191,8 @@ export class YoutrackService {
   /**
    * Get project work item types (workflows)
    * @param projectId Project ID
-   * @returns Array of work item type names
+   * @returns {Promise<string[]>} Array of work item type names
+   * @throws {YouTrackApiError} If the work item types cannot be fetched
    */
   public async getProjectWorkflowItems(projectId: string): Promise<string[]> {
     const [response, error] = await tryCatch(
@@ -211,11 +214,29 @@ export class YoutrackService {
   }
 
   /**
+   * Get issue link types
+   * @returns {Promise<IssueLinkType[]>} Array of issue link types
+   * @throws {YouTrackApiError} If the issue link types cannot be fetched
+   */
+  public async getIssueLinkTypes(): Promise<IssueLinkType[]> {
+    const [response, error] = await tryCatch(
+      this.fetch<IssueLinkType[]>(
+        `/api/issueLinkTypes?fields=aggregation,directed,id,name,readOnly,sourceToTarget,targetToSource`,
+      ),
+    )
+    if (error) {
+      throw new YouTrackApiError(error, `Cannot fetch issue link types from '${this.host}'`)
+    }
+    return response
+  }
+
+  /**
    * Get workflow logs
    * @param workflowId Workflow ID
    * @param ruleId Rule ID
    * @param fromTimestamp Timestamp to filter logs from
-   * @returns Array of rule logs
+   * @returns {Promise<RuleLog[]>} Array of rule logs
+   * @throws {YouTrackApiError} If the workflow logs cannot be fetched
    */
   public async getWorkflowLogs(workflowId: string, ruleId: string, fromTimestamp = 0, top = -1): Promise<RuleLog[]> {
     const [data, error] = await tryCatch(
