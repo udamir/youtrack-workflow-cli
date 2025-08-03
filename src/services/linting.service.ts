@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process"
 import type { ESLint } from "eslint"
 
-import { fileExists, readPackageJson } from "../tools/fs.tools"
+import { fileExists, readPackageJson, readTsConfig } from "../tools/fs.tools"
 import type { LintingConfig, LintingResult } from "../types"
 
 type LintingServiceConfig = {
@@ -130,27 +130,61 @@ export class LintingService {
   }
 
   private async runTypeCheck(workflowName: string): Promise<LintingResult> {
-    try {
-      // Check if local tsconfig.json exists
-      const hasTsConfig = fileExists("tsconfig.json")
+    const compilerOptions: string[] = ["--noEmit", "--allowJs", "--checkJs", "--pretty false"]
 
-      let tscCommand: string
+    // Read and parse tsconfig.json using fs.tools
+    const tsconfig = readTsConfig()
 
-      if (hasTsConfig) {
-        // Use local tsconfig.json if it exists
-        tscCommand = `npx --no-install tsc --noEmit --pretty false ${workflowName}/*.js`
-      } else {
-        // Fallback to explicit compiler options if no tsconfig.json
-        tscCommand = `npx --no-install tsc --noEmit --allowJs --checkJs --target es2021 --lib es2021 --moduleResolution node --pretty false ${workflowName}/*.js`
+    if (tsconfig) {
+      // Extract compiler options and convert to CLI flags
+      const options = tsconfig.compilerOptions || {}
+
+      // Convert compiler options to CLI parameters
+      for (const [key, value] of Object.entries(options)) {
+        switch (key) {
+          case "lib":
+            if (Array.isArray(value)) {
+              compilerOptions.push("--lib", value.join(","))
+            }
+            break
+          case "target":
+          case "module":
+          case "moduleResolution":
+            compilerOptions.push(`--${key}`, String(value))
+            break
+          case "strict":
+          case "esModuleInterop":
+          case "skipLibCheck":
+          case "forceConsistentCasingInFileNames":
+          case "resolveJsonModule":
+          case "isolatedModules":
+          case "noImplicitAny":
+          case "noImplicitReturns":
+          case "noImplicitThis":
+          case "noUnusedLocals":
+          case "noUnusedParameters":
+          case "exactOptionalPropertyTypes":
+          case "noImplicitOverride":
+          case "noPropertyAccessFromIndexSignature":
+          case "noUncheckedIndexedAccess":
+            if (value) compilerOptions.push(`--${key}`)
+            break
+        }
       }
+    } else {
+      // Fallback to explicit compiler options if no tsconfig.json
+      compilerOptions.push("--target es2021", "--lib es2021")
+    }
 
+    // Build the complete command
+    const tscCommand = `npx --no-install tsc ${compilerOptions.join(" ")} ${workflowName}/*.js`
+
+    try {
       // Run TypeScript compiler
       execSync(tscCommand, {
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "pipe"],
-        cwd: process.cwd(), // Ensure we run from the project root
       })
-
       return { errors: [], warnings: [] } // No output means no errors
     } catch (execError: any) {
       // TypeScript compiler errors

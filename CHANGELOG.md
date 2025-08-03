@@ -2,7 +2,7 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
-## [1.2.2] - 2025-08-03
+## [1.2.3] - 2025-08-03
 
 ### New Features
 

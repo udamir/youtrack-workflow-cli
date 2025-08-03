@@ -317,5 +317,27 @@ export const createProjectJsonFile = async (projectPath: string, fileName: strin
  */
 export const createTypesDirectory = async (projectPath: string): Promise<void> => {
   const typesPath = path.join(projectPath, "types")
-  await fs.promises.mkdir(typesPath, { recursive: true })
+  if (!fs.existsSync(typesPath)) {
+    await fs.promises.mkdir(typesPath, { recursive: true })
+  }
+}
+
+/**
+ * Read and parse TypeScript configuration file
+ * @param configPath Path to tsconfig.json (defaults to "tsconfig.json" in current directory)
+ * @returns Parsed tsconfig object or null if file doesn't exist or parsing fails
+ */
+export const readTsConfig = (configPath = "tsconfig.json"): any | null => {
+  try {
+    const fullPath = path.isAbsolute(configPath) ? configPath : path.join(process.cwd(), configPath)
+
+    if (!fs.existsSync(fullPath)) {
+      return null
+    }
+
+    const content = fs.readFileSync(fullPath, "utf-8")
+    return JSON.parse(content)
+  } catch (_error) {
+    return null
+  }
 }
