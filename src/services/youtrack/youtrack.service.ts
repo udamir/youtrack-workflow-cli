@@ -50,17 +50,26 @@ export class YoutrackService {
     // Make the request
     const response = await fetch(url, params)
 
+    const data = response.headers.get("Content-Type")?.includes("application/json")
+      ? await response.json()
+      : await response.blob()
+
     // Handle common error cases
     if (response.status === 401) {
       throw new YouTrackApiError(null, "Unauthorized: YOUTRACK_TOKEN is invalid", response.status)
     }
 
     if (!response.ok) {
-      throw new YouTrackApiError(null, `Request failed with status ${response.status}: ${path}`, response.status)
+      const message = data?.error_description.split("\n\n")[0] || "Unknown error"
+      throw new YouTrackApiError(
+        null,
+        `Request failed with status ${response.status}: ${message.replace(/scripts\//g, "\n")}`,
+        response.status,
+      )
     }
 
     // Parse JSON response
-    return type === "json" ? response.json() : (response.blob() as Promise<T>)
+    return data
   }
 
   /**
@@ -114,10 +123,7 @@ export class YoutrackService {
     const form = new FormData()
     form.append("file", blob, `${workflowName}.zip`)
 
-    const [_, error] = await tryCatch(this.fetch("/api/admin/workflows/import", "json", { method: "POST", body: form }))
-    if (error) {
-      throw new YouTrackApiError(error, `Error while uploading workflow '${workflowName}' to '${this.host}'`)
-    }
+    await this.fetch("/api/admin/workflows/import", "json", { method: "POST", body: form })
   }
 
   /**

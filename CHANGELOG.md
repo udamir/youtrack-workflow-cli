@@ -2,6 +2,15 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
+## [1.4.0] - 2025-08-29
+
+### Improvements
+- Cleaner and more readable error output in sync and watch flows with YouTrack error description.
+
+### Bug Fixes
+- Upload now awaits the HTTP request to correctly propagate YouTrack errors to callers.
+- Fix formatting for generated issue link types definitions.
+
 ## [1.3.0] - 2025-08-04
 
 ### New Features

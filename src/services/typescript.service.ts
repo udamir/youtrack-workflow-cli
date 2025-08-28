@@ -178,11 +178,14 @@ export class TypeScriptService {
     // Generate Fields interface
     const fieldsInterface = this.printFieldsInterface(fields)
 
-    const linkTypes = []
+    const linkTypes: string[] = []
     for (const linkType of issueLinkTypes) {
       linkTypes.push(linkType.sourceToTarget, ...(linkType.targetToSource ? [linkType.targetToSource] : []))
     }
-    const issueLinkTypesStr = `\ntype IssueLinkTypeValue =${linkTypes.length > 0 ? linkTypes.map((v) => `\n  | "${v}"`).join("\n") : " string"}`
+    const uniqueLinkTypes = Array.from(new Set(linkTypes.filter(Boolean)))
+    const issueLinkTypesStr = `\ntype IssueLinkTypeValue =${
+      uniqueLinkTypes.length > 0 ? `\n${uniqueLinkTypes.map((v) => `  | "${v}"`).join("\n")}` : " string"
+    }`
 
     // Generate the Issue and IssueWorkItem types
     const issueTypes =

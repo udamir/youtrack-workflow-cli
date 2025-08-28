@@ -23,7 +23,7 @@ type WorkflowDataCache = {
 
 export interface SyncEventHandlers {
   onConflict?: (workflow: string) => Promise<SyncType>
-  onSync?: (workflow: string, syncStatus: SyncStatus, index: number) => void
+  onSync?: (workflow: string, status: SyncStatus, message: string, index: number) => void
   preUploadCheck?: (workflow: string) => Promise<boolean>
 }
 
@@ -186,12 +186,11 @@ export class ProjectService {
     }
 
     for (const workflow of workflows) {
-      let syncStatus: SyncStatus = SYNC_STATUS.SYNCED
-      let syncType: SyncType
+      let syncStatus: { status: SyncStatus; message?: string } = { status: SYNC_STATUS.SYNCED }
       try {
         const status = await this.workflowStatus(workflow)
         if (status !== WORKFLOW_STATUS.SYNCED) {
-          syncType = await getSyncType(workflow, status)
+          const syncType = await getSyncType(workflow, status)
           if (syncType === SYNC_TYPE.PUSH) {
             if (eventHandlers.preUploadCheck) {
               const allowed = await eventHandlers.preUploadCheck(workflow)
@@ -200,18 +199,18 @@ export class ProjectService {
               }
             }
             await this.uploadWorkflow(workflow)
-            syncStatus = SYNC_STATUS.PUSHED
+            syncStatus = { status: SYNC_STATUS.PUSHED }
           } else if (syncType === SYNC_TYPE.PULL) {
             await this.downloadYoutrackWorkflow(workflow)
-            syncStatus = SYNC_STATUS.PULLED
+            syncStatus = { status: SYNC_STATUS.PULLED }
           } else {
-            syncStatus = SYNC_STATUS.SKIPPED
+            syncStatus = { status: SYNC_STATUS.SKIPPED }
           }
         }
-      } catch (_error) {
-        syncStatus = SYNC_STATUS.FAILED
+      } catch (error) {
+        syncStatus = { status: SYNC_STATUS.FAILED, message: error instanceof Error ? error.message : String(error) }
       }
-      eventHandlers.onSync?.(workflow, syncStatus, index++)
+      eventHandlers.onSync?.(workflow, syncStatus.status, syncStatus.message || "", index++)
     }
   }
 

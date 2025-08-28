@@ -2,8 +2,8 @@ import inquirer from "inquirer"
 import ora from "ora"
 
 import { YoutrackService, ProjectService, LintingService, WatchService } from "../services"
-import { PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
-import { isError, StatusCounter, tryCatch, printNewVersionWarning } from "../utils"
+import { COLORS, PROGRESS_STATUS, SYNC_STATUS, SYNC_TYPE, WORKFLOW_STATUS } from "../consts"
+import { isError, StatusCounter, tryCatch, printNewVersionWarning, colorize } from "../utils"
 import { printLintResult, printLintSummary } from "./lint.command"
 import { printItemStatus } from "../tools/console.tools"
 import { printWorkflowStatus } from "./status.command"
@@ -131,9 +131,12 @@ export const syncCommand = async (
 
         return selected.syncType
       },
-      onSync: async (workflow, status, index) => {
+      onSync: async (workflow, status, message, index) => {
         spinner.stop()
         printSyncStatus(workflow, status)
+        if (message) {
+          console.log(colorize(message, COLORS.FG.GRAY))
+        }
         statuses.inc(status)
 
         // Execute post-push script if workflow was pushed and post-push script exists
@@ -215,14 +218,10 @@ export const syncCommand = async (
 
       // Custom onSyncResult handler that implements pre/post-push scripts
       onSyncResult: async (workflowName, status, message) => {
-        const statusType =
-          status === SYNC_STATUS.PUSHED
-            ? PROGRESS_STATUS.SUCCESS
-            : status === SYNC_STATUS.FAILED
-              ? PROGRESS_STATUS.FAILED
-              : PROGRESS_STATUS.INFO
-
-        printItemStatus(`${workflowName}`, statusType, message || status)
+        printSyncStatus(workflowName, status)
+        if (message) {
+          console.log(colorize(message, COLORS.FG.GRAY))
+        }
 
         // Run post-push script after successful upload
         if (ytw?.postpush && status === SYNC_STATUS.PUSHED) {
