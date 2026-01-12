@@ -2,7 +2,7 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
-## [1.5.0] - 2026-01-12
+## [1.5.1] - 2026-01-12
 
 ### New Features
 
@@ -12,6 +12,10 @@ A command-line tool for managing YouTrack workflows with seamless local developm
   - Supports multiple specific rules: `ytw logs workflow1/rule1 workflow2/rule2`
   - Can be mixed with workflow-only targets: `ytw logs workflow1/rule1 workflow2`
   - Works with all existing options (`--watch`, `--top`, `--all`)
+
+### Bug Fixes
+
+- **Fixed stale cache issue during pull/sync**: Files deleted on YouTrack server were not being removed locally during pull operations. The server cache is now cleared before downloading to ensure fresh data is fetched.
 
 ## [1.4.0] - 2025-08-29
 

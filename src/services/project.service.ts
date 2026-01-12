@@ -220,6 +220,9 @@ export class ProjectService {
    * @throws {WorkflowNotFoundError} If the workflow could not be fetched
    */
   public async downloadYoutrackWorkflow(name: string) {
+    // Clear server cache to ensure fresh data is fetched
+    delete this._serverCache[name]
+
     const data = await this.cacheYoutrackWorkflow(name)
     if (!data) {
       throw new WorkflowNotFoundError(name)
