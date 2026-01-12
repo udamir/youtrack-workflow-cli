@@ -2,6 +2,17 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
+## [1.5.0] - 2026-01-12
+
+### New Features
+
+#### Specific Rule Targeting for Logs
+- **Direct rule targeting**: Added support for specifying specific rules directly using `workflow/rule` syntax in `ytw logs`
+  - Example: `ytw logs my-workflow/my-rule` fetches logs for a specific rule without prompts
+  - Supports multiple specific rules: `ytw logs workflow1/rule1 workflow2/rule2`
+  - Can be mixed with workflow-only targets: `ytw logs workflow1/rule1 workflow2`
+  - Works with all existing options (`--watch`, `--top`, `--all`)
+
 ## [1.4.0] - 2025-08-29
 
 ### Improvements

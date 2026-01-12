@@ -15,6 +15,25 @@ const LOG_LEVEL_COLORS: Record<string, string> = {
   DEBUG: COLORS.FG.GREEN,
 }
 
+type ParsedLogTarget = { type: "workflow"; name: string } | { type: "rule"; workflowName: string; ruleName: string }
+
+/**
+ * Parse a log target argument into either a workflow or workflow/rule target
+ * @param arg The argument to parse (e.g., "my-workflow" or "my-workflow/my-rule")
+ * @returns Parsed target object
+ */
+const parseLogTarget = (arg: string): ParsedLogTarget => {
+  const slashIndex = arg.indexOf("/")
+  if (slashIndex > 0 && slashIndex < arg.length - 1) {
+    return {
+      type: "rule",
+      workflowName: arg.substring(0, slashIndex),
+      ruleName: arg.substring(slashIndex + 1),
+    }
+  }
+  return { type: "workflow", name: arg }
+}
+
 /**
  * Print logs for a workflow rule
  * @param workflowName Name of the workflow
@@ -47,7 +66,7 @@ const printLogs = (workflowName: string, ruleName: string, logs: RuleLog[]) => {
  * Logs command implementation
  */
 export const logsCommand = async (
-  workflowNames: string[],
+  targets: string[],
   { host, token, top, watch, all }: { host: string; token: string; top: number; watch?: number; all: boolean },
 ): Promise<void> => {
   const youtrackService = new YoutrackService(host, token)
@@ -66,19 +85,50 @@ export const logsCommand = async (
 
   const workflows = serverWorkflows.filter((w) => isManifestExists(w.name))
 
-  if (workflowNames.length === 0) {
-    // Validate specified workflows
-    const invalidWorkflows = workflowNames.filter((name) => !workflows.some((w) => w.name === name))
+  // Parse targets into workflow-only and rule-specific targets
+  const parsedTargets = targets.map(parseLogTarget)
+  const workflowTargets = parsedTargets.filter((t): t is { type: "workflow"; name: string } => t.type === "workflow")
+  const ruleTargets = parsedTargets.filter(
+    (t): t is { type: "rule"; workflowName: string; ruleName: string } => t.type === "rule",
+  )
 
+  // Resolve rule-specific targets directly
+  const directRules: WorkflowRule[] = []
+  for (const target of ruleTargets) {
+    const workflow = workflows.find((w) => w.name === target.workflowName)
+    if (!workflow) {
+      spinner.fail(`Workflow '${target.workflowName}' not found`)
+      return
+    }
+    const rule = workflow.rules.find((r) => r.name === target.ruleName)
+    if (!rule) {
+      spinner.fail(`Rule '${target.ruleName}' not found in workflow '${target.workflowName}'`)
+      return
+    }
+    directRules.push({
+      workflowId: workflow.id,
+      ruleId: rule.id,
+      workflowName: workflow.name,
+      ruleName: rule.name,
+    })
+  }
+
+  // Handle workflow-only targets
+  const workflowNames = workflowTargets.map((t) => t.name)
+
+  // Validate specified workflows
+  if (workflowNames.length > 0) {
+    const invalidWorkflows = workflowNames.filter((name) => !workflows.some((w) => w.name === name))
     if (invalidWorkflows.length > 0) {
       spinner.fail(`Invalid workflow names: ${invalidWorkflows.join(", ")}`)
       return
     }
   }
 
-  // If no workflows specified, show selection menu
-  const workflowsToProcess = workflowNames.length ? workflows.filter((w) => workflowNames.includes(w.name)) : workflows
-  const workflowRules = workflowsToProcess.reduce(
+  // Build workflow rules for workflow-only targets (used for --all or prompt)
+  const workflowsToProcess =
+    workflowNames.length > 0 ? workflows.filter((w) => workflowNames.includes(w.name)) : workflows
+  const workflowRulesForPrompt = workflowsToProcess.reduce(
     (res, workflow) => {
       res.push(
         ...workflow.rules.map((r) => ({
@@ -96,27 +146,41 @@ export const logsCommand = async (
     [] as { name: string; value: WorkflowRule }[],
   )
 
-  if (workflowRules.length === 0) {
+  // If we have direct rules and no workflow targets, skip prompt/all logic
+  const hasWorkflowTargets = workflowNames.length > 0 || targets.length === 0
+  const needsSelection = hasWorkflowTargets && !all && workflowRulesForPrompt.length > 0
+
+  if (workflowRulesForPrompt.length === 0 && directRules.length === 0) {
     spinner.fail("No workflows found. Add workflows first.")
     return
   }
 
   spinner.stop()
 
-  const selectedRules: WorkflowRule[] = []
-  if (all) {
-    selectedRules.push(...workflowRules.map(({ value }) => value))
-  } else {
-    const { selectedRules: selectedRulesFromPrompt } = await inquirer.prompt<{ selectedRules: WorkflowRule[] }>([
-      {
-        type: "checkbox",
-        name: "selectedRules",
-        message: "Select rules to view logs for:",
-        choices: workflowRules,
-        validate: (input) => (input.length > 0 ? true : "Please select at least one rule"),
-      },
-    ])
-    selectedRules.push(...selectedRulesFromPrompt)
+  const selectedRules: WorkflowRule[] = [...directRules]
+
+  if (hasWorkflowTargets) {
+    if (all) {
+      // Add all rules from workflow targets
+      selectedRules.push(...workflowRulesForPrompt.map(({ value }) => value))
+    } else if (needsSelection) {
+      // Prompt for selection from workflow targets
+      const { selectedRules: selectedRulesFromPrompt } = await inquirer.prompt<{ selectedRules: WorkflowRule[] }>([
+        {
+          type: "checkbox",
+          name: "selectedRules",
+          message: "Select rules to view logs for:",
+          choices: workflowRulesForPrompt,
+          validate: (input) => (input.length > 0 || directRules.length > 0 ? true : "Please select at least one rule"),
+        },
+      ])
+      selectedRules.push(...selectedRulesFromPrompt)
+    }
+  }
+
+  if (selectedRules.length === 0) {
+    spinner.fail("No rules selected")
+    return
   }
 
   spinner.start("Fetching logs...")

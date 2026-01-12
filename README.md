@@ -267,16 +267,42 @@ module.exports = [
 ### Logs
 
 ```bash
-ytw logs [workflow-name...] [--watch [ms]] [--all] [--top <number>]
+ytw logs [targets...] [--watch [ms]] [--all] [--top <number>]
 ```
 
-View logs for a selected workflow rules. This helps you monitor the behavior of your workflows in real-time. 
+View logs for workflow rules. This helps you monitor the behavior of your workflows in real-time.
 
-Options:
+**Arguments:**
+- `[targets...]` - Workflow names or workflow/rule paths. Supports two formats:
+  - `workflow-name` - Target a workflow (will prompt for rule selection or use `--all`)
+  - `workflow-name/rule-name` - Target a specific rule directly (no prompt)
+
+**Options:**
 - `-w, --watch [ms]` - watch for new logs in YouTrack in real-time with interval in milliseconds, default: 5000ms.
 - `-a, --all` - fetch all logs for rules of all workflows in project
 - `-t, --top [number]` - number of logs to fetch per rule, default: 10
-- If workflow names are provided and `--all` is not specified, it will prompt you to select rules from provided workflows.
+
+**Examples:**
+
+```bash
+# View logs for a specific rule (no prompt)
+ytw logs my-workflow/my-rule
+
+# View logs for multiple specific rules
+ytw logs workflow1/rule1 workflow2/rule2
+
+# View logs for a workflow (prompts for rule selection)
+ytw logs my-workflow
+
+# View all logs for a workflow
+ytw logs my-workflow --all
+
+# Watch logs for a specific rule
+ytw logs my-workflow/my-rule --watch
+
+# Mixed: specific rule + workflow selection
+ytw logs workflow1/rule1 workflow2
+```
 
 ### Types
 

@@ -123,7 +123,7 @@ program
 program
   .command("logs")
   .description("Fetch and display workflow logs")
-  .argument("[workflows...]", "Workflow names to fetch logs for")
+  .argument("[targets...]", "Workflow names or workflow/rule paths (e.g., my-workflow/my-rule)")
   .option("-t, --top <number>", "Number of logs to fetch per rule", Number.parseInt, 10)
   .option("-w, --watch [ms]", "Watch for new logs", Number.parseInt)
   .option("-a, --all", "Fetch all logs for rules of all workflows in project")
