@@ -38,7 +38,7 @@
     "dotenv": "^17.0.1",
     "inquirer": "^12.6.0",
     "jszip": "^3.10.1",
-    "ora": "5.4.1"
+    "ora": "9.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.2",
