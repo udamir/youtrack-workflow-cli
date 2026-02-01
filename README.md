@@ -267,7 +267,7 @@ module.exports = [
 ### Logs
 
 ```bash
-ytw logs [targets...] [--watch [ms]] [--all] [--top <number>]
+ytw logs [targets...] [--watch [ms]] [--all] [--top <number>] [--last <number>] [--since <value>]
 ```
 
 View logs for workflow rules. This helps you monitor the behavior of your workflows in real-time.
@@ -278,9 +278,14 @@ View logs for workflow rules. This helps you monitor the behavior of your workfl
   - `workflow-name/rule-name` - Target a specific rule directly (no prompt)
 
 **Options:**
-- `-w, --watch [ms]` - watch for new logs in YouTrack in real-time with interval in milliseconds, default: 5000ms.
-- `-a, --all` - fetch all logs for rules of all workflows in project
-- `-t, --top [number]` - number of logs to fetch per rule, default: 10
+- `-t, --top <number>` - Number of logs to fetch per rule (default: 10)
+- `-l, --last <number>` - Show only the last N log entries (tail)
+- `-s, --since <value>` - Show logs since timestamp or duration. Supports:
+  - Unix timestamp: `1768577702000`
+  - Duration: `5m`, `1h`, `2d`, `1w`
+  - Compound duration: `"1h 30m"`, `"2d 5h 15m"`
+- `-w, --watch [ms]` - Watch for new logs in real-time (default interval: 5000ms)
+- `-a, --all` - Fetch logs for all rules in the workflow(s)
 
 **Examples:**
 
@@ -302,6 +307,18 @@ ytw logs my-workflow/my-rule --watch
 
 # Mixed: specific rule + workflow selection
 ytw logs workflow1/rule1 workflow2
+
+# Show only the last 10 log entries
+ytw logs my-workflow/my-rule --last 10
+
+# Show logs from the last 5 minutes
+ytw logs my-workflow/my-rule --since 5m
+
+# Show logs from the last 1 hour and 30 minutes
+ytw logs my-workflow/my-rule --since "1h 30m"
+
+# Combine options: last 20 logs from the past hour
+ytw logs my-workflow/my-rule --since 1h --last 20
 ```
 
 ### Types

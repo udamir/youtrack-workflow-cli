@@ -29,28 +29,25 @@ export class LogService {
 
   constructor(private youtrackService: YoutrackService) {}
 
-  private async fetchWorkflowRuleLogs(rule: WorkflowRule, top = -1): Promise<RuleLog[]> {
-    // Get last timestamp from cache or use 0 to fetch all logs
+  private async fetchWorkflowRuleLogs(rule: WorkflowRule, top = -1, fromTimestamp = 0): Promise<RuleLog[]> {
+    // Get last timestamp from cache or use provided fromTimestamp
     const rulesCache = this._logsCache[rule.workflowId]?.rules
-    const lastTimestamp = rulesCache?.[rule.ruleId]?.lastTimestamp || 0
+    const lastTimestamp = rulesCache?.[rule.ruleId]?.lastTimestamp ?? fromTimestamp
 
     // Fetch logs
     const logs = await this.youtrackService.getWorkflowLogs(rule.workflowId, rule.ruleId, lastTimestamp + 1, top)
 
+    // Initialize rule cache if it doesn't exist (even with no logs, to preserve fromTimestamp for watch mode)
+    if (!rulesCache[rule.ruleId]) {
+      rulesCache[rule.ruleId] = {
+        logs: [],
+        lastTimestamp: fromTimestamp,
+      }
+    }
+
     // If there are new logs, update cache
     if (logs.length > 0) {
-      // Get the last timestamp
       const newestTimestamp = logs[logs.length - 1]?.timestamp || 0
-
-      // Initialize rule cache if it doesn't exist
-      if (!rulesCache[rule.ruleId]) {
-        rulesCache[rule.ruleId] = {
-          logs: [],
-          lastTimestamp: 0,
-        }
-      }
-
-      // Update cache
       rulesCache[rule.ruleId].logs.push(...logs)
       rulesCache[rule.ruleId].lastTimestamp = newestTimestamp
     }
@@ -63,11 +60,13 @@ export class LogService {
    * Fetch workflow logs
    * @param workflowRule Workflow rule
    * @param top Number of logs to fetch (if -1, fetch all)
+   * @param fromTimestamp Timestamp to fetch logs from (default: 0 for all logs)
    * @returns Logs for the workflow grouped by rule
    */
   public async fetchWorkflowRulesLogs(
     workflowRule: WorkflowRule[],
     top = -1,
+    fromTimestamp = 0,
   ): Promise<Array<WorkflowRule & { logs: RuleLog[] }>> {
     const result: (WorkflowRule & { logs: RuleLog[] })[] = []
 
@@ -79,7 +78,7 @@ export class LogService {
       }
       if (!rule?.ruleId) continue
 
-      const logs = await this.fetchWorkflowRuleLogs(rule, top)
+      const logs = await this.fetchWorkflowRuleLogs(rule, top, fromTimestamp)
 
       // Add logs to result
       result.push({ ...rule, logs })

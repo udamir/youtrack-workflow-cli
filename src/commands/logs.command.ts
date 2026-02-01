@@ -1,7 +1,7 @@
 import inquirer from "inquirer"
 import ora from "ora"
 
-import { colorize, formatDate, prettifyStacktrace, tryCatch } from "../utils"
+import { colorize, formatDate, parseSince, prettifyStacktrace, tryCatch } from "../utils"
 import { YoutrackService, LogService, type WorkflowRule } from "../services"
 import { isManifestExists, readLocalWorkflowFile } from "../tools/fs.tools"
 import type { RuleLog } from "../types"
@@ -67,7 +67,15 @@ const printLogs = (workflowName: string, ruleName: string, logs: RuleLog[]) => {
  */
 export const logsCommand = async (
   targets: string[],
-  { host, token, top, watch, all }: { host: string; token: string; top: number; watch?: number; all: boolean },
+  {
+    host,
+    token,
+    top,
+    last,
+    since,
+    watch,
+    all,
+  }: { host: string; token: string; top: number; last?: number; since?: string; watch?: number; all: boolean },
 ): Promise<void> => {
   const youtrackService = new YoutrackService(host, token)
   const logService = new LogService(youtrackService)
@@ -185,8 +193,19 @@ export const logsCommand = async (
 
   spinner.start("Fetching logs...")
 
+  // Parse --since option into timestamp
+  let fromTimestamp = 0
+  if (since) {
+    try {
+      fromTimestamp = parseSince(since)
+    } catch (err) {
+      spinner.fail((err as Error).message)
+      return
+    }
+  }
+
   // One-time fetch
-  const [rulesLogs, error] = await tryCatch(logService.fetchWorkflowRulesLogs(selectedRules, top))
+  const [rulesLogs, error] = await tryCatch(logService.fetchWorkflowRulesLogs(selectedRules, top, fromTimestamp))
   spinner.stop()
 
   if (error) {
@@ -195,7 +214,9 @@ export const logsCommand = async (
   }
 
   for (const { workflowName, ruleName, logs } of rulesLogs) {
-    printLogs(workflowName, ruleName, logs)
+    // Apply --last option (tail logs)
+    const displayLogs = last ? logs.slice(-last) : logs
+    printLogs(workflowName, ruleName, displayLogs)
   }
 
   if (watch) {

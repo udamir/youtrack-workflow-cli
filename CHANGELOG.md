@@ -2,7 +2,18 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
-## [1.5.2] - 2026-02-01
+## [1.6.0] - 2026-02-01
+
+#### Log Filtering Options
+- **`--last <number>`**: Show only the last N log entries (tail functionality)
+  - Example: `ytw logs my-workflow/my-rule --last 10`
+- **`--since <value>`**: Filter logs from a specific timestamp or relative duration
+  - Supports Unix timestamps: `--since 1768577702000`
+  - Supports durations: `--since 5m`, `--since 1h`, `--since 2d`, `--since 1w`
+  - Supports compound durations: `--since "1h 30m"`, `--since "2d 5h 15m"`
+
+
+## [1.5.2] - 2026-01-12
 
 ### New Features
 

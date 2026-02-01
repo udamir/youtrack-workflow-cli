@@ -221,3 +221,40 @@ export const tryCatch = async <T, E = Error>(promise: Promise<T>): Promise<Resul
     return [null, error as E]
   }
 }
+
+/**
+ * Parse duration string or timestamp into Unix timestamp (ms)
+ * Supports: "5m", "1h", "1h 5m", "2d 3h 30m", or raw timestamp
+ * @param value Duration string or Unix timestamp
+ * @returns Unix timestamp in milliseconds
+ * @throws Error if the format is invalid
+ */
+export function parseSince(value: string): number {
+  // Raw timestamp (all digits)
+  if (/^\d+$/.test(value)) {
+    return Number.parseInt(value, 10)
+  }
+
+  const multipliers: Record<string, number> = {
+    s: 1000,
+    m: 60_000,
+    h: 3_600_000,
+    d: 86_400_000,
+    w: 604_800_000,
+  }
+
+  // Match all duration parts: "1h", "5m", "30s", etc.
+  const pattern = /(\d+)([smhdw])/g
+  const matches = [...value.matchAll(pattern)]
+
+  if (matches.length === 0) {
+    throw new Error(`Invalid --since format: "${value}". Use timestamp or duration (e.g., 5m, 1h, "1h 30m")`)
+  }
+
+  // Sum all durations
+  const totalMs = matches.reduce((sum, [, amount, unit]) => {
+    return sum + Number.parseInt(amount) * multipliers[unit]
+  }, 0)
+
+  return Date.now() - totalMs
+}

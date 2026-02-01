@@ -132,7 +132,9 @@ export class YoutrackService {
    * @throws {YouTrackApiError} If the projects cannot be fetched
    */
   public async fetchProjects(): Promise<ProjectEntity[]> {
-    const [data, error] = await tryCatch(this.fetch<ProjectEntity[]>("/api/admin/projects?fields=id,name,shortName&$top=-1"))
+    const [data, error] = await tryCatch(
+      this.fetch<ProjectEntity[]>("/api/admin/projects?fields=id,name,shortName&$top=-1"),
+    )
     if (error) {
       throw new YouTrackApiError(error, `Cannot fetch projects from '${this.host}'`)
     }

@@ -125,6 +125,8 @@ program
   .description("Fetch and display workflow logs")
   .argument("[targets...]", "Workflow names or workflow/rule paths (e.g., my-workflow/my-rule)")
   .option("-t, --top <number>", "Number of logs to fetch per rule", Number.parseInt, 10)
+  .option("-l, --last <number>", "Show only last N log entries", Number.parseInt)
+  .option("-s, --since <value>", 'Show logs since timestamp or duration (e.g., 5m, 1h, "1h 30m")')
   .option("-w, --watch [ms]", "Watch for new logs", Number.parseInt)
   .option("-a, --all", "Fetch all logs for rules of all workflows in project")
   .option("--host [host]", "YouTrack host")
@@ -132,8 +134,16 @@ program
   .action(
     (
       workflows: string[],
-      { host = process.env.YOUTRACK_BASE_URL || "", token = process.env.YOUTRACK_TOKEN || "", top, watch, all = false },
-    ) => logsCommand(workflows, { host, token, top, watch: watch === true ? 5000 : watch, all }),
+      {
+        host = process.env.YOUTRACK_BASE_URL || "",
+        token = process.env.YOUTRACK_TOKEN || "",
+        top,
+        last,
+        since,
+        watch,
+        all = false,
+      },
+    ) => logsCommand(workflows, { host, token, top, last, since, watch: watch === true ? 5000 : watch, all }),
   )
 
 program
