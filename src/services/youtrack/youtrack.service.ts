@@ -132,7 +132,7 @@ export class YoutrackService {
    * @throws {YouTrackApiError} If the projects cannot be fetched
    */
   public async fetchProjects(): Promise<ProjectEntity[]> {
-    const [data, error] = await tryCatch(this.fetch<ProjectEntity[]>("/api/admin/projects?fields=id,name,shortName"))
+    const [data, error] = await tryCatch(this.fetch<ProjectEntity[]>("/api/admin/projects?fields=id,name,shortName&$top=-1"))
     if (error) {
       throw new YouTrackApiError(error, `Cannot fetch projects from '${this.host}'`)
     }
@@ -227,7 +227,7 @@ export class YoutrackService {
   public async getIssueLinkTypes(): Promise<IssueLinkType[]> {
     const [response, error] = await tryCatch(
       this.fetch<IssueLinkType[]>(
-        `/api/issueLinkTypes?fields=aggregation,directed,id,name,readOnly,sourceToTarget,targetToSource`,
+        `/api/issueLinkTypes?fields=aggregation,directed,id,name,readOnly,sourceToTarget,targetToSource&$top=-1`,
       ),
     )
     if (error) {

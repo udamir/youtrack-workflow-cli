@@ -2,7 +2,7 @@
 
 A command-line tool for managing YouTrack workflows with seamless local development experience.
 
-## [1.5.1] - 2026-01-12
+## [1.5.2] - 2026-02-01
 
 ### New Features
 
@@ -16,6 +16,7 @@ A command-line tool for managing YouTrack workflows with seamless local developm
 ### Bug Fixes
 
 - **Fixed stale cache issue during pull/sync**: Files deleted on YouTrack server were not being removed locally during pull operations. The server cache is now cleared before downloading to ensure fresh data is fetched.
+- **Fixed API pagination for projects and link types**: Added `$top=-1` parameter to `fetchProjects()` and `getIssueLinkTypes()` to retrieve all items instead of the default ~50 limit (#70)
 
 ## [1.4.0] - 2025-08-29
 
